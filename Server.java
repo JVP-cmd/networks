@@ -20,14 +20,18 @@ class Server{
         System.out.println("Select an action: ");
         System.out.println("<View> - To view files on server");
         System.out.println("<Download> - To download a file");
-        System.out.println("<Set Permission>");
+        System.out.println("<Perm> Set Permission");
 
         String request = sc.nextLine();
         if(request.equals("View")){view();}
 
         else if(request.equals("Perm")){
+            System.out.println("Type filename:");
             String filename=sc.nextLine();
-            perm(filename);}
+            System.out.println("Make readable? (Y/N)");
+            String p = sc.nextLine();
+
+            if(p.equals("N"))   perm(filename, false);}
 
         else{
             String filename=sc.nextLine();
@@ -50,8 +54,16 @@ class Server{
         }
     }
 
-    public static void perm(String file){
-      
+    public static void perm(String file, boolean bool){
+      File f = new File(file);
+      if(f.exists()){
+          if(f.setReadable(bool,true)){
+              System.out.println("Permissions Changed");
+          }
+      }
+      else{
+          System.out.println("File does not exist");
+      }
     }
 
     public static void download(String filename) throws IOException {
