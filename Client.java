@@ -9,12 +9,13 @@ import java.net.Socket;
 import java.util.Scanner;
 
 class Client{
+
     public static void main(String args[])throws Exception{
         String address = "";
         Scanner sc=new Scanner(System.in);
 
         //create the socket on port 5000
-        Socket s=new Socket("137.158.58.126",5000);
+        Socket s=new Socket("196.42.106.178",5000);
         DataInputStream din=new DataInputStream(s.getInputStream());
         DataOutputStream dout=new DataOutputStream(s.getOutputStream());
         BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
@@ -55,5 +56,11 @@ class Client{
             //do nothing
         }
     }
+         public static void CloseClientSockets(DataInputStream i, DataOutputStream o, Socket s){
+   try{i.close();
+   o.close();
+       s.close();
+     
+   }catch(Exception e){System.out.println(e);} }
 }
 //this is a typical client program

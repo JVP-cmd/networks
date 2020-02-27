@@ -20,10 +20,14 @@ class Server{
         System.out.println("Select an action: ");
         System.out.println("<View> - To view files on server");
         System.out.println("<Download> - To download a file");
-        System.out.println("<Perm> Set Permission");
+        System.out.println("<Readable(Y/N)> - Set Read Permission");
+        //System.out.println("<Downldable(Ye/No)> - Set Download Permission");
+        System.out.println("<Stop> - To close communication to server");
 
         String request = sc.nextLine();
         if(request.equals("View")){view();}
+        else if(request.equals("Stop")){
+        System.exit(0);}
 
         else if(request.equals("Perm")){
             System.out.println("Type filename:");
@@ -31,7 +35,14 @@ class Server{
             System.out.println("Make readable? (Y/N)");
             String p = sc.nextLine();
 
-            if(p.equals("N"))   perm(filename, false);}
+            if(p.equals("N"))   perm(filename, false);
+            System.out.println("Make private? (Y/N)");
+            if(sc.nextLine().equals("Y")){
+                perm(filename);
+            }
+        }
+        
+        
 
         else{
             String filename=sc.nextLine();
@@ -40,7 +51,7 @@ class Server{
     }
 
     public static void view(){
-        Path path = Paths.get("/home/j/jlxkhu003/Documents/Networks");
+        Path path = Paths.get("C:\\Users\\Joshua Powell\\Documents\\NetBeansProjects\\CSC3002FA1");
 
         try(Stream<Path> subPaths = Files.walk(path,1)){
 
@@ -57,7 +68,7 @@ class Server{
     public static void perm(String file, boolean bool){
       File f = new File(file);
       if(f.exists()){
-          if(f.setReadable(bool,true)){
+          if(f.setReadable(bool)){
               System.out.println("Permissions Changed");
           }
       }
@@ -66,12 +77,16 @@ class Server{
       }
     }
 
+    public static void perm(String file){
+      File f = new File(file);
+      File makePrivate = new File("C:\\Users\\Joshua Powell\\Documents\\NetBeansProjects\\CSC3002FA1\\Server\\Private");
+      try{
+          Files.move(f.toPath(), makePrivate.toPath());  
+      }catch(IOException e){}
+      System.out.println(f.getPath());
+    }
+
     public static void download(String filename) throws IOException {
-        Scanner sc=new Scanner(System.in);
-        System.out.println("Enter File Name: ");
-
-
-        sc.close();
         while(true)
         {
             //create server socket on port 5000
@@ -130,4 +145,5 @@ class Server{
             ss.close();
         }
     }
+    
 }
