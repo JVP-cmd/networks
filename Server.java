@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
@@ -20,14 +21,11 @@ class Server{
         System.out.println("Select an action: ");
         System.out.println("<View> - To view files on server");
         System.out.println("<Download> - To download a file");
-        System.out.println("<Readable(Y/N)> - Set Read Permission");
-        //System.out.println("<Downldable(Ye/No)> - Set Download Permission");
-        System.out.println("<Stop> - To close communication to server");
+        System.out.println("<Upload> - To upload a file");
+        System.out.println("<Permission> Set Permission");
 
         String request = sc.nextLine();
         if(request.equals("View")){view();}
-        else if(request.equals("Stop")){
-        System.exit(0);}
 
         else if(request.equals("Perm")){
             System.out.println("Type filename:");
@@ -41,17 +39,16 @@ class Server{
                 perm(filename);
             }
         }
-        
-        
 
-        else{
+        else if (request.equals("Download")){
+            System.out.println("Give the filename");
             String filename=sc.nextLine();
             download(filename);}
 
     }
 
     public static void view(){
-        Path path = Paths.get("C:\\Users\\Joshua Powell\\Documents\\NetBeansProjects\\CSC3002FA1");
+        Path path = Paths.get("/home/j/jlxkhu003/Documents/Networks/Server");
 
         try(Stream<Path> subPaths = Files.walk(path,1)){
 
@@ -78,15 +75,18 @@ class Server{
     }
 
     public static void perm(String file){
-      File f = new File(file);
-      File makePrivate = new File("C:\\Users\\Joshua Powell\\Documents\\NetBeansProjects\\CSC3002FA1\\Server\\Private");
-      try{
-          Files.move(f.toPath(), makePrivate.toPath());  
-      }catch(IOException e){}
-      System.out.println(f.getPath());
+        File f = new File("/home/j/jlxkhu003/Documents/Networks");
+        File makePrivate = new File("/home/j/jlxkhu003/Documents/Networks/Server/Private");
+        try{
+            Files.copy(f.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){}
+        System.out.println("File is now private");
     }
 
+
+
     public static void download(String filename) throws IOException {
+
         while(true)
         {
             //create server socket on port 5000
@@ -145,5 +145,4 @@ class Server{
             ss.close();
         }
     }
-    
 }
