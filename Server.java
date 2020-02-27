@@ -1,6 +1,4 @@
 
-
-
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
@@ -43,6 +41,29 @@ public class Server {
 	private void printAllAccessible(String username, Socket socket){
 
 	}
+        private void uploadToServer(Socket s){
+         try{
+                DataInputStream din=new DataInputStream(s.getInputStream());
+        DataOutputStream dout=new DataOutputStream(s.getOutputStream());
+        BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
+        String str=""; String filename="";
+                    while(!str.equals("stop")){
+                    str=br.readLine();
+                    dout.writeUTF(str);
+                    dout.flush();
+                    filename=din.readUTF();
+                    long sz=Long.parseLong(din.readUTF());
+                     byte b[]=new byte [1024];
+                    FileOutputStream fos=new FileOutputStream(new File(filename),true);
+                    long bytesRead;
+                    do{
+                    bytesRead=din.read(b,0,b.length);
+                    fos.write(b,0,b.length);}
+                    while(!(bytesRead<1024));{
+                     fos.close();
+                     dout.close();
+                     s.close();}}}
+                    catch(Exception e){System.out.println();}}
 
 	private void DownloadFile(String filename, Socket s){
         while(true){
@@ -95,11 +116,22 @@ public class Server {
                            pw.println("<Upload> - To upload a file");
                             pw.println("<Permission> Set Permission");
                         DataInputStream din=new DataInputStream(socket.getInputStream());
+                         DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
                         String userinp=din.readUTF();
                         
                         if(userinp.equals("Download")){
                         pw.println("Please enter the name of the file to be downloaded");
-                        }
+                        userinp =din.readUTF();
+                        dout.writeUTF("Download File");
+                        dout.flush();
+                        DownloadFile(userinp,socket);}
+                        
+                        else if(userinp.equals("Upload")){
+                           
+                        
+                        dout.writeUTF("Upload to server");
+                        dout.flush();
+                        uploadToServer(socket);}
                             
                         
                         /*
@@ -109,7 +141,6 @@ public class Server {
 			else if(this.status == Status.Full){
 				System.out.println("Servers are full"); // Send message to clients [Saying server is full and that they
 														// should try later
-
 			}
 			else {
 				Scanner s = new Scanner(socket.getInputStream());

@@ -24,9 +24,24 @@ public class ClientMain {
 			String yeet = "Client " + Client.numClients + " says Hello";
 while(true){
             DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
+            DataInputStream din=new DataInputStream(socket.getInputStream());
             String input=inp.nextLine();
+            String checkDownload=din.readUTF();
+             
+            if(checkDownload.equals("Download File")){
+          thisClient.DownloadtoClient(socket);}
+            else if(checkDownload.equals("Upload to server")){
+                System.out.println("Enter the name of the file to be uploaded");
+                
+                Scanner s=new Scanner(System.in);
+                String filename=s.nextLine();
+            thisClient.uploadFile(filename, socket);}
+            
             dout.writeUTF(input);
             dout.flush();
+         //   dout.close(); maybe need it?
+       //     din.close();
+   
 }
 			
 				/*Scanner serverin = new Scanner(socket.getInputStream());
