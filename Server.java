@@ -1,148 +1,162 @@
-import javax.imageio.IIOException;
+
+
+
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.Objects;
+import java.net.*;
+import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-class Server{
-    public static void main(String args[])throws Exception{
+public class Server {
 
-        Scanner sc=new Scanner(System.in);
+	private String ipAddress;
+	private String resourceDir;
+	public enum Status {Available, Offline, Full};
+	private Status status;
+	private int socketNo;
+	private int numConnections;
+	private ServerSocket serverSocket;
 
-        System.out.println("Welcome to the server");
-        System.out.println("Select an action: ");
-        System.out.println("<View> - To view files on server");
-        System.out.println("<Download> - To download a file");
-        System.out.println("<Upload> - To upload a file");
-        System.out.println("<Permission> Set Permission");
+	public Server(String ipAddress, String resourceDir, int socketNo){
+		this.ipAddress = ipAddress;
+		this.resourceDir = resourceDir;
+		status = Status.Offline;
+		this.socketNo = socketNo;
+		numConnections = 0;
+	}
 
-        String request = sc.nextLine();
-        if(request.equals("View")){view();}
+	public void initialize(){ // Initializes server socket using specified port number
+		try {
+			serverSocket = new ServerSocket(this.socketNo);
+			System.out.println("Socket initialized");
 
-        else if(request.equals("Perm")){
-            System.out.println("Type filename:");
-            String filename=sc.nextLine();
-            System.out.println("Make readable? (Y/N)");
-            String p = sc.nextLine();
-
-            if(p.equals("N"))   perm(filename, false);
-            System.out.println("Make private? (Y/N)");
-            if(sc.nextLine().equals("Y")){
-                perm(filename);
-            }
-        }
-
-        else if (request.equals("Download")){
-            System.out.println("Give the filename");
-            String filename=sc.nextLine();
-            download(filename);}
-
-    }
-
-    public static void view(){
-        Path path = Paths.get("/home/j/jlxkhu003/Documents/Networks/Server");
-
-        try(Stream<Path> subPaths = Files.walk(path,1)){
-
-            List<String> subPathList = subPaths.filter(Files::isRegularFile)
-                    .map(Objects::toString)
-                    .collect(Collectors.toList());
-            System.out.println(subPathList);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void perm(String file, boolean bool){
-      File f = new File(file);
-      if(f.exists()){
-          if(f.setReadable(bool)){
-              System.out.println("Permissions Changed");
-          }
-      }
-      else{
-          System.out.println("File does not exist");
-      }
-    }
-
-    public static void perm(String file){
-        File f = new File("/home/j/jlxkhu003/Documents/Networks");
-        File makePrivate = new File("/home/j/jlxkhu003/Documents/Networks/Server/Private");
-        try{
-            Files.copy(f.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }catch(IOException e){}
-        System.out.println("File is now private");
-    }
+			// Generate all paths in server [Will have res folder that keeps all files on server]
+			//
 
 
+			status = Status.Available;
+		}
+		catch(IOException e) {
+			System.out.println("Error setting up server on port " + this.socketNo);
+		}
+	}
 
-    public static void download(String filename) throws IOException {
+	private void printAllAccessible(String username, Socket socket){
 
-        while(true)
-        {
-            //create server socket on port 5000
-            ServerSocket ss=new ServerSocket(5000);
-            System.out.println ("Waiting for request");
-            Socket s=ss.accept();
-            System.out.println ("Connected With "+s.getInetAddress().toString());
-            DataInputStream din=new DataInputStream(s.getInputStream());
+	}
+
+	private void DownloadFile(String filename, Socket s){
+        while(true){
+                try{
+ DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
-            try{
-                String str="";
-
-                str=din.readUTF();
-                System.out.println("SendGet....Ok");
-
-                if(!str.equals("stop")){
-
-                    System.out.println("Sending File: "+filename);
-                    dout.writeUTF(filename);
-                    dout.flush();
-
-                    File f=new File(filename);
-                    FileInputStream fin=new FileInputStream(f);
-                    long sz=(int) f.length();
-
-                    byte b[]=new byte [1024];
-
-                    int read;
-
-                    dout.writeUTF(Long.toString(sz));
-                    dout.flush();
-
-                    System.out.println ("Size: "+sz);
-                    System.out.println ("Buf size: "+ss.getReceiveBufferSize());
-
-                    while((read = fin.read(b)) != -1){
-                        dout.write(b, 0, read);
-                        dout.flush();
-                    }
-                    fin.close();
-
-                    System.out.println("..ok");
-                    dout.flush();
-                }
-                dout.writeUTF("stop");
-                System.out.println("Send Complete");
-                dout.flush();
+            
+            String Data;
+            Data=din.readUTF();
+            if(!Data.equals("stop")){
+            System.out.println("Downloading File: "+filename);
+            dout.writeUTF(filename);
+            dout.flush();
+            File file=new File(filename);
+            FileInputStream fileIn=new FileInputStream(file);
+            long sz=(int)file.length();
+            byte b[]=new byte[1024];
+            int read;
+            dout.writeUTF(Long.toString(sz));
+            dout.flush();
+            while((read=fileIn.read(b))!=1){
+            dout.write(b,0,read);
+            dout.flush();}
+            fileIn.close();
+            dout.flush();}
+            dout.writeUTF("stop");
+            dout.flush();
+             din.close();
+            //s.close();
+            }catch(Exception e){System.out.println(e);}
+           
+            
             }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-                System.out.println("An error occured");
-            }
-            din.close();
-            s.close();
-            ss.close();
-        }
-    }
+
+	}
+
+	
+
+	public void listen(){
+		System.out.println("Listening");
+		try(Socket socket = serverSocket.accept()) {
+			boolean runOps = false;
+			numConnections++;
+			System.out.println("Connection from " + socket.getLocalAddress().getHostAddress() + " detected");
+                        System.out.println("Sending promts...");
+                        PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
+                        pw.println("Select an action: ");
+                         pw.println("<View> - To view files on server");
+                          pw.println("<Download> - To download a file");
+                           pw.println("<Upload> - To upload a file");
+                            pw.println("<Permission> Set Permission");
+                        DataInputStream din=new DataInputStream(socket.getInputStream());
+                        String userinp=din.readUTF();
+                        
+                        if(userinp.equals("Download")){
+                        pw.println("Please enter the name of the file to be downloaded");
+                        }
+                            
+                        
+                        /*
+			if(this.status == Status.Offline){
+				System.out.println("Connection denied"); // send message to client [Saying servers aren't available]
+			}
+			else if(this.status == Status.Full){
+				System.out.println("Servers are full"); // Send message to clients [Saying server is full and that they
+														// should try later
+
+			}
+			else {
+				Scanner s = new Scanner(socket.getInputStream());
+				System.out.println(numConnections);
+				System.out.println(s.nextLine());
+				PrintWriter msg = new PrintWriter(socket.getOutputStream(), true);
+				msg.println("The server says hi back");
+				// We create threads here (For now, we just let stuff send items through and stuff)
+			}*/
+		}
+
+		catch(IOException e){
+			System.out.println("Error while listening for connections");
+		}
+
+	}
+
+	public ServerSocket getServerSocket(){
+		return serverSocket;
+	}
+
+
+	public void receiveConnection(Socket socket){
+		try{
+			numConnections++;
+		}
+		catch(Exception e){
+			System.out.println("Connection to server was unsuccessful");
+		}
+	}
+
+	public Status getStatus(){
+		return status;
+	}
+
+	public String getResourceDir(){
+		return resourceDir;
+	}
+
+	public String getIpAddress(){
+		return ipAddress;
+	}
+
+	public int getSocketNo(){
+		return socketNo;
+	}
+	public int getNumConnections(){
+		return numConnections;
+	}
 }
