@@ -1,4 +1,3 @@
-
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
@@ -47,11 +46,13 @@ public class Server {
         DataOutputStream dout=new DataOutputStream(s.getOutputStream());
         BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
         String str=""; String filename="";
+        System.out.println("upload to Server started");
                     while(!str.equals("stop")){
-                    str=br.readLine();
+                    str="bam";
                     dout.writeUTF(str);
                     dout.flush();
                     filename=din.readUTF();
+                    filename+="Server's";
                     long sz=Long.parseLong(din.readUTF());
                      byte b[]=new byte [1024];
                     FileOutputStream fos=new FileOutputStream(new File(filename),true);
@@ -63,17 +64,20 @@ public class Server {
                      fos.close();
                      dout.close();
                      s.close();}}}
-                    catch(Exception e){System.out.println();}}
+                    catch(Exception e){System.out.println(e);}}
 
 	private void DownloadFile(String filename, Socket s){
         while(true){
                 try{
+                   
  DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
             
             String Data;
             Data=din.readUTF();
+         
             if(!Data.equals("stop")){
+          
             System.out.println("Downloading File: "+filename);
             dout.writeUTF(filename);
             dout.flush();
@@ -85,15 +89,18 @@ public class Server {
             dout.writeUTF(Long.toString(sz));
             dout.flush();
             while((read=fileIn.read(b))!=1){
+                
             dout.write(b,0,read);
             dout.flush();}
             fileIn.close();
             dout.flush();}
+    
             dout.writeUTF("stop");
             dout.flush();
              din.close();
-            //s.close();
-            }catch(Exception e){System.out.println(e);}
+            s.close();
+             System.out.println("Download to Client complete server side");
+               }catch(ArrayIndexOutOfBoundsException e){System.out.println("Download complete");break;}catch(Exception e){System.out.println(e.getMessage());break;}
            
             
             }
@@ -118,20 +125,25 @@ public class Server {
                         DataInputStream din=new DataInputStream(socket.getInputStream());
                          DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
                         String userinp=din.readUTF();
+                    
                         
                         if(userinp.equals("Download")){
-                        pw.println("Please enter the name of the file to be downloaded");
-                        userinp =din.readUTF();
+                        
+                        
                         dout.writeUTF("Download File");
                         dout.flush();
+                        userinp =din.readUTF();
+                       
                         DownloadFile(userinp,socket);}
                         
                         else if(userinp.equals("Upload")){
-                           
+                           dout.writeUTF("Upload to server");
                         
-                        dout.writeUTF("Upload to server");
+                        
                         dout.flush();
-                        uploadToServer(socket);}
+                        if(din.readUTF().equals("prep server")){
+                        
+                        uploadToServer(socket);}}
                             
                         
                         /*

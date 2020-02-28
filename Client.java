@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.io.*;
 
 
 
@@ -58,7 +59,7 @@ public class Client {
             dout.flush();
              din.close();
             //s.close();
-            }catch(Exception e){System.out.println(e);}
+            }catch(ArrayIndexOutOfBoundsException e){System.out.println("Upload complete");break;}catch(EOFException e){System.out.println("Upload complete");break;}catch(Exception e){System.out.println(e);break;}
            
             
             }}
@@ -67,23 +68,31 @@ public class Client {
                 DataInputStream din=new DataInputStream(s.getInputStream());
         DataOutputStream dout=new DataOutputStream(s.getOutputStream());
         BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("Send <Get> to download file");
         String str=""; String filename="";
                     while(!str.equals("stop")){
-                    str=br.readLine();
+                     
+                    str="bam";
+                  
                     dout.writeUTF(str);
                     dout.flush();
                     filename=din.readUTF();
+                    filename+=" client's";
                     long sz=Long.parseLong(din.readUTF());
                      byte b[]=new byte [1024];
                     FileOutputStream fos=new FileOutputStream(new File(filename),true);
                     long bytesRead;
+                     System.out.println("Download to Client complete ");
                     do{
                     bytesRead=din.read(b,0,b.length);
                     fos.write(b,0,b.length);}
                     while(!(bytesRead<1024));{
+                        
                      fos.close();
                      dout.close();
-                     s.close();}}}
-                    catch(Exception e){System.out.println();}
+                     s.close();
+                    System.out.println("Yeet");}
+                   }}
+                    catch(Exception e){System.out.println(e);}
 }
 }
