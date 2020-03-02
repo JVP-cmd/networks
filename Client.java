@@ -68,12 +68,12 @@ public class Client {
                 DataInputStream din=new DataInputStream(s.getInputStream());
         DataOutputStream dout=new DataOutputStream(s.getOutputStream());
         BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Send <Get> to download file");
-        String str=""; String filename="";
+     
+        String str=" "; String filename="";
                     while(!str.equals("stop")){
                      
                     str="bam";
-                  
+                
                     dout.writeUTF(str);
                     dout.flush();
                     filename=din.readUTF();
@@ -81,17 +81,22 @@ public class Client {
                     long sz=Long.parseLong(din.readUTF());
                      byte b[]=new byte [1024];
                     FileOutputStream fos=new FileOutputStream(new File(filename),true);
-                    long bytesRead;
+                    long bytesRead=1;
                      System.out.println("Download to Client complete ");
-                    do{
+                    try{do{
                     bytesRead=din.read(b,0,b.length);
-                    fos.write(b,0,b.length);}
-                    while(!(bytesRead<1024));{
+                    
+                    //str=din.readUTF();
+                    fos.write(b,0,b.length);
+                    }
+                    
+                    while(!(bytesRead<1024));{//end of file exception here
                         
                      fos.close();
                      dout.close();
                      s.close();
-                    System.out.println("Yeet");}
+                  }}catch(Exception e){System.out.println(e);}
+                    
                    }}
                     catch(Exception e){System.out.println(e);}
 }

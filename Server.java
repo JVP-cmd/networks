@@ -9,7 +9,8 @@ public class Server {
 	private String resourceDir;
 	public enum Status {Available, Offline, Full};
 	private Status status;
-	private int socketNo;
+	private final int socketNo;
+        private Socket s;
 	private int numConnections;
 	private ServerSocket serverSocket;
 
@@ -24,11 +25,11 @@ public class Server {
 	public void initialize(){ // Initializes server socket using specified port number
 		try {
 			serverSocket = new ServerSocket(this.socketNo);
+                       
 			System.out.println("Socket initialized");
 
 			// Generate all paths in server [Will have res folder that keeps all files on server]
 			//
-
 
 			status = Status.Available;
 		}
@@ -67,14 +68,14 @@ public class Server {
                     catch(Exception e){System.out.println(e);}}
 
 	private void DownloadFile(String filename, Socket s){
-        while(true){
+          while(true){//infinite while loop to wait for the client to be ready to recieve
                 try{
-                   
- DataInputStream din=new DataInputStream(s.getInputStream());
+            s = serverSocket.accept();       
+            DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
             
             String Data;
-            Data=din.readUTF();
+            Data=din.readUTF(); //input recived from the DownloadtoClient method in Client class (recives "bam ")
          
             if(!Data.equals("stop")){
           
@@ -99,10 +100,9 @@ public class Server {
             dout.flush();
              din.close();
             s.close();
-             System.out.println("Download to Client complete server side");
+             
                }catch(ArrayIndexOutOfBoundsException e){System.out.println("Download complete");break;}catch(Exception e){System.out.println(e.getMessage());break;}
-           
-            
+                
             }
 
 	}
@@ -130,20 +130,19 @@ public class Server {
                         if(userinp.equals("Download")){
                         
                         
-                        dout.writeUTF("Download File");
-                        dout.flush();
+                    
                         userinp =din.readUTF();
                        
                         DownloadFile(userinp,socket);}
                         
                         else if(userinp.equals("Upload")){
-                           dout.writeUTF("Upload to server");
+                           
                         
                         
                         dout.flush();
-                        if(din.readUTF().equals("prep server")){
                         
-                        uploadToServer(socket);}}
+                        
+                        uploadToServer(socket);}
                             
                         
                         /*
