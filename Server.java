@@ -13,90 +13,90 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 class Server{
+
+    /**
+     * Main method to be run first before the client class
+     * @param args
+     * @throws Exception
+     */
     public static void main(String args[])throws Exception {
         dialogues();
     }
 
-    public static void dialogues() throws Exception{
-        Scanner sc=new Scanner(System.in);
-        boolean excess = false;
+    public static void dialogues() throws Exception {
+        Scanner sc = new Scanner(System.in);
+        boolean acccess = false;
         boolean success = false;
-        String userName= "";
+        String userName = "";
 
         System.out.println("Welcome to the server");
-        System.out.printf("User name: ");
+        System.out.printf("User name: ");    // Ask user for their login information
 
-        while(!success) {               // Checks if username is in the records and repeats the prompt if it's incorrect
+        while (!success) {               // Checks if username is in the records and repeats the prompt if it's incorrect
             userName = sc.nextLine();
             success = users(userName);
-            if(!success) System.out.println("Unknown user, try again.");
+            if (!success)
+                System.out.println("Unknown user, try again.");        //Prompt to re-enter the username if intial was incorrect
         }
 
-        System.out.println("Excess level? (Public/Admin): ");
+        System.out.println("Excess level? (Public/Admin): ");       // Prompt user to specify access level
         success = false;
         String ex = sc.nextLine();
-        if(ex.equals("Public")){
-            excess = false;
-        }
 
-        else if(ex.equals("Admin")){
+        if (ex.equals("Public")) {
+            acccess = false;
+        } else if (ex.equals("Admin")) {
             System.out.printf("Password: ");
 
-            while(!success){
+            while (!success) {
                 String pass = sc.nextLine();
-                success  = password(userName, pass);
-                if(!success) System.out.println("Try again");
+                success = password(userName, pass);
+                if (!success) System.out.println("Try again");
             }
-            excess = true;
-            System.out.println("Welcome back "+userName+"!!");
+            acccess = true;
+            System.out.println("Welcome back " + userName + "!!");
         }
+        String request = "";
 
+        while (!(request.equals("Q"))) {
+            System.out.println("Select an action: ");
+            System.out.println("<View> - To view files on server");
+            System.out.println("<Download> - To download a file");
+            if (acccess) System.out.println("<P> - To set Permissions");
+            System.out.println("<Q> To quit");
 
-        System.out.println("Select an action: ");
-        System.out.println("<View> - To view files on server");
-        System.out.println("<Download> - To download a file");
-        if(excess)      System.out.println("<P> - To set Permissions");
+            request = sc.nextLine();
 
+            if (request.equals("View")) {
+                if (acccess) {
+                    view("./Server/".concat(userName) + "/Private");
+                    view("./Server/".concat(userName));
+                } else view("./Server/".concat(userName));
+            } else if (request.equals("P") && acccess) {
+                System.out.println("Type filename:");
+                String filename = sc.nextLine();
+                System.out.println("Make Private? (Y/N)");
+                String p = sc.nextLine();
+                File f = new File("./Server/".concat(userName), filename);
+                perm(f, userName, filename);
+            } else if (request.equals("Download")) {
+                System.out.println("Give the filename");
+                String filename = sc.nextLine();
 
-        String request = sc.nextLine();
+                Threadmanager server = new Threadmanager(5000, filename, userName);
+                new Thread(server).start();
 
-        if(request.equals("View")){
-            if(excess) {
-                view("./Server/".concat(userName)+"/Private");
-                view("./Server/".concat(userName));
+                try {
+                    Thread.sleep(20 * 1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("Stopping Server");
+                server.stopT();
+
             }
-            else view("./Server/".concat(userName));
         }
-
-        else if(request.equals("P") && excess){
-            System.out.println("Type filename:");
-            String filename=sc.nextLine();
-            System.out.println("Make Private? (Y/N)");
-            String p = sc.nextLine();
-            File f = new File("./Server/".concat(userName), filename);
-            perm(f, userName, filename);
-        }
-
-        else if (request.equals("Download")){
-            System.out.println("Give the filename");
-            String filename=sc.nextLine();
-            //ServerSocket s = new ServerSocket(5000);
-
-                //Socket serverthread = s.accept();
-
-            Threadmanager server = new Threadmanager(5000, filename, userName);
-            new Thread(server).start();
-
-            try {
-                Thread.sleep(20 * 1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println("Stopping Server");
-            server.stopT();
-
-              }
-            }
+    }
 
 
     /**
