@@ -3,7 +3,7 @@ package server;
 public class FileOperation {
 	private User user;
 	private String fileName;
-	public enum FileOp {UPLOAD, DOWNLOAD}
+	public enum FileOp {UPLOAD, DOWNLOAD, MOVE, NONE}
 	private FileOp fileOp;
 
 	public FileOperation(User user, String fileName, FileOp fileOp){

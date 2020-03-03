@@ -15,9 +15,8 @@ public class ServerMain {
 			// Arguments will be the following: [server port, resource folder(folder where all files will be stored)}
 
 			endServer = false;
-			String ip = InetAddress.getLocalHost().getHostAddress();
-			String fileLoc = "res";
-			Server server = new Server(ip, fileLoc, 59090, 200);
+			String fileRepo = "src/server/res/";
+			Server server = new Server(fileRepo, 59090, 200);
 			server.initialize();
 
 			Thread[] threads = new Thread[3];
@@ -33,9 +32,6 @@ public class ServerMain {
 			threads[2].start();
 
 			System.out.println();
-			while(!endServer){
-				// Keeps the server running
-			}
 			for(int i = 0; i < threads.length; i++){
 				threads[i].join();
 			}
@@ -102,9 +98,10 @@ public class ServerMain {
 		public void run() {
 			while(!endServer){
 				try{
+					/*
 					System.out.println("Number of open threads: " + server.numThreads() + " connection(s)");
 					System.out.println("Number of users logged in: " + server.numloggedIn() + " user(s)");
-					Thread.sleep(20000);
+					Thread.sleep(5000);*/
 				}
 				catch (Exception e){
 

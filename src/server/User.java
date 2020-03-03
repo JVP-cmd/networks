@@ -2,23 +2,33 @@ package server;
 
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class User {
 
 	private InetAddress connectionAddress;
+	public enum Access {SUPER, ADMIN , PRIVATE, PUBLIC}
+	private Access access;
 	private final String userName;
 	private final String password;
 	private AtomicBoolean loggedIn;
+	private ArrayList<FileDetails> userFileLogs;
 
-	public User(String userName, String password){
+	public User(String userName, String password, Access access){
 		this.userName = userName;
 		this.password = password;
 		this.loggedIn = new AtomicBoolean(false);
+		this.access = access;
+		this.userFileLogs = new ArrayList<>();
 	}
 
 	public String getConnectionAddress(){
 		return connectionAddress.getHostAddress();
+	}
+
+	public ArrayList<FileDetails> getUserFileLogs(){
+		return userFileLogs;
 	}
 
 	public String getUserName(){
@@ -27,6 +37,10 @@ public class User {
 
 	public boolean loggedIn(){
 		return loggedIn.get();
+	}
+
+	public Access getAccess(){
+		return access;
 	}
 
 	public synchronized boolean logIn(String userName, String password, InetAddress connectionAddress){
