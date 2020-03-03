@@ -78,7 +78,7 @@ public class Server {
          System.out.println("Upload complete");}
                     catch(Exception e){System.out.println(e);}}
 
-	private void DownloadFile(String filename, Socket s,String username){
+	private void DownloadFile(String filename, Socket s){
              
           while(true){//infinite while loop to wait for the client to be ready to recieve
                 try{
@@ -95,7 +95,7 @@ public class Server {
             System.out.println("Downloading File: "+filename);
             dout.writeUTF(filename);
             dout.flush();
- File file=new File("./Server/".concat(username), filename);
+ File file=new File(filename);
             FileInputStream fileIn=new FileInputStream(file);
             long sz=(int)file.length();
             byte b[]=new byte[1024];
@@ -147,7 +147,7 @@ public class Server {
                     
                         userinp =din.readUTF();
                     
-                        DownloadFile(userinp,socket,"username");}
+                        DownloadFile(userinp,socket);}
                         
                         else if(userinp.equals("Upload")){
                         uploadToServer(socket);}
