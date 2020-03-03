@@ -13,8 +13,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 class Server{
-    public static void main(String args[])throws Exception{
+    public static void main(String args[])throws Exception {
+        dialogues();
+    }
 
+    public static void dialogues() throws Exception{
         Scanner sc=new Scanner(System.in);
         boolean excess = false;
         boolean success = false;
@@ -77,9 +80,24 @@ class Server{
         else if (request.equals("Download")){
             System.out.println("Give the filename");
             String filename=sc.nextLine();
-            download(filename, userName);}
+            //ServerSocket s = new ServerSocket(5000);
 
-    }
+                //Socket serverthread = s.accept();
+
+            Threadmanager server = new Threadmanager(5000, filename, userName);
+            new Thread(server).start();
+
+            try {
+                Thread.sleep(20 * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Stopping Server");
+            server.stopT();
+
+              }
+            }
+
 
     /**
      * View contents in the server
@@ -155,69 +173,5 @@ class Server{
         System.out.println("Moved to private folder");
     }
 
-    /**
-     * Allows client to download a file from server
-     * @param filename
-     * @throws IOException
-     */
-    public static void download(String filename, String username) throws IOException {
 
-        while(true)
-        {
-            //create server socket on port 5000
-            ServerSocket ss=new ServerSocket(5000);
-            System.out.println ("Waiting for request");
-            Socket s = ss.accept();
-            System.out.println ("Connected With "+s.getInetAddress().toString());
-            DataInputStream din=new DataInputStream(s.getInputStream());
-            DataOutputStream dout=new DataOutputStream(s.getOutputStream());
-            try{
-                String str="";
-
-                str=din.readUTF();
-                System.out.println("SendGet....Ok");
-
-                if(!str.equals("stop")){
-
-                    System.out.println("Sending File: "+filename);
-                    dout.writeUTF(filename);
-                    dout.flush();
-
-                    File f=new File("./Server/".concat(username), filename);
-                    FileInputStream fin=new FileInputStream(f);
-                    long sz=(int) f.length();
-
-                    byte b[]=new byte [1024];
-
-                    int read;
-
-                    dout.writeUTF(Long.toString(sz));
-                    dout.flush();
-
-                    System.out.println ("Size: "+sz);
-                    System.out.println ("Buf size: "+ss.getReceiveBufferSize());
-
-                    while((read = fin.read(b)) != -1){
-                        dout.write(b, 0, read);
-                        dout.flush();
-                    }
-                    fin.close();
-
-                    System.out.println("..ok");
-                    dout.flush();
-                }
-                dout.writeUTF("stop");
-                System.out.println("Send Complete");
-                dout.flush();
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-                System.out.println("An error occured");
-            }
-            din.close();
-            s.close();
-            ss.close();
-        }
-    }
 }
