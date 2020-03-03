@@ -34,7 +34,7 @@ public class Threadmanager extends Thread{
                         "Error accepting client connection", e);
             }
             new Thread(
-                    new Threads(clientSocket, filename, username)
+                    new Threads(ss, clientSocket, filename, username)
             ).start();
         }
         System.out.println("Server Stopped.") ;
@@ -56,7 +56,7 @@ public class Threadmanager extends Thread{
 
     public synchronized void openServerSocket(){
         try {
-            ss = new ServerSocket(port);
+            this.ss = new ServerSocket(port);
         } catch (IOException e) {
             e.printStackTrace();
         }

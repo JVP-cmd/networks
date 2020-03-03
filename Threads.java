@@ -9,9 +9,9 @@ public class Threads extends Thread{
     private ServerSocket ss;
     private String username, filename;
 
-    public Threads(Socket s, String filename, String username){
-        this.s = s;
+    public Threads(ServerSocket ss, Socket s, String filename, String username){
         this.ss = ss;
+        this.s = s;
         this.filename = filename;
         this.username = username;
     }
@@ -79,6 +79,7 @@ public class Threads extends Thread{
                 e.printStackTrace();
                 System.out.println("An error occured");
             }
+
             try {
                 din.close();
             } catch (IOException e) {
@@ -86,11 +87,6 @@ public class Threads extends Thread{
             }
             try {
                 s.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            try {
-                ss.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
