@@ -1,70 +1,73 @@
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.net.Socket;
 import java.io.*;
+import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.Scanner;
 
+class Client{
+    public static void main(String args[])throws Exception{
+      
+        Scanner sc=new Scanner(System.in);
+Socket socket=new Socket("localhost",5000);
 
+ DataInputStream din=new DataInputStream(socket.getInputStream());
+            DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
+            Scanner outputs = new Scanner(socket.getInputStream());
+            System.out.println(outputs.nextLine());
+            System.out.println(outputs.nextLine());
+            while(!din.readBoolean()){
+             
+                String username=sc.nextLine();
+            dout.writeUTF(username);
+            if(!din.readBoolean()) {System.out.println(outputs.nextLine());}}
+            System.out.println(outputs.nextLine());
+            String perm=sc.nextLine();
+            dout.writeUTF(perm);
+            if(perm.equals("Admin")){
+            System.out.println(outputs.nextLine());
+            while(!din.readBoolean()){
+            String pass=sc.nextLine();
+            dout.writeUTF(pass);
+            if(!din.readBoolean()){System.out.println(outputs.nextLine());}}
+                System.out.println(outputs.nextLine());}
+            String request = "";
+            while(!request.equals("Q")){
+                System.out.println(outputs.nextLine());
+             System.out.println(outputs.nextLine());
+             System.out.println(outputs.nextLine());
+             boolean ad=din.readBoolean();
+            if(ad)
+            {System.out.println(outputs.nextLine());}
+              System.out.println(outputs.nextLine());
+            request=sc.nextLine();
+            dout.writeUTF(request);
+            boolean acccess=din.readBoolean();
+          if(request.equals("P")&&acccess){
+              System.out.println(outputs.nextLine());
+          String filename=sc.nextLine();
+          dout.writeUTF(filename);
+          System.out.println(outputs.nextLine());
+          String p=sc.nextLine();
+          dout.writeUTF(p);}
+          else if(request.equals("Download")){
+              System.out.println(outputs.nextLine());
+          String filename=sc.nextLine();
+          dout.writeUTF(filename);}
+            }
+        //create the socket on port 5000
+   
+       
+    }
 
-public class Client {
-
-	public static int numClients = 0;
-	private String ipAddress;
-	private String clientName;
-
-
-	public Client(String ipAddress, String clientName){
-		numClients++;
-		this.ipAddress = ipAddress;
-		this.clientName = clientName;
-	}
-
-
-	public String getIpAddress(){
-		return ipAddress;
-	}
-
-	public String getClientName(){
-		return clientName;
-	}
-                public void uploadFile(String filename, Socket s){
-            while(true){
-                try{
- DataInputStream din=new DataInputStream(s.getInputStream());
-            DataOutputStream dout=new DataOutputStream(s.getOutputStream());
-            
-            String Data;
-            Data=din.readUTF();
-            while(!Data.equals("stop")){
-            System.out.println("Uploading File: "+filename);
-            dout.writeUTF(filename);
-            dout.flush();
-            File file=new File(filename);
-            FileInputStream fileIn=new FileInputStream(file);
-            long sz=(int)file.length();
-            byte b[]=new byte[1024];
-            int read;
-            dout.writeUTF("stop");
-            dout.writeUTF(Long.toString(sz));
-            dout.flush();
-            while((read=fileIn.read(b))!=1){
-            dout.write(b,0,read);
-            dout.flush();}
-            fileIn.close();
-             }
-           
-            dout.flush();
-             din.close();
-            //s.close();
-            }catch(ArrayIndexOutOfBoundsException e){System.out.println("Upload complete");break;}catch(EOFException e){System.out.println("Upload complete");break;}catch(Exception e){System.out.println(e);break;}
-           
-            
-            }}
-                public void DownloadtoClient( Socket s){
+    public static void move(String file){
+        File f = new File(file);
+        File makePrivate = new File(".\\Client\\" + file);
+        try{
+            Files.copy(f.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){}
+        f.delete();
+    }
+                   private static void DownloadtoClient( Socket s){
                     try{
                 DataInputStream din=new DataInputStream(s.getInputStream());
         DataOutputStream dout=new DataOutputStream(s.getOutputStream());
@@ -95,6 +98,7 @@ public class Client {
                     }
                     
                     while(!(bytesRead<1024));{//end of file exception here
+                        move(filename);
                         
                      fos.close();
                      dout.close();
@@ -104,4 +108,5 @@ public class Client {
                    }}
                     catch(Exception e){System.out.println(e);}
 }
+
 }
