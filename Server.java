@@ -1,7 +1,15 @@
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Server {
 
@@ -190,6 +198,21 @@ public class Server {
 			System.out.println("Connection to server was unsuccessful");
 		}
 	}
+        
+        public static void view(String folderPath){
+        Path path = Paths.get(folderPath);
+
+        try(Stream<Path> subPaths = Files.walk(path,1)){
+
+            List<String> subPathList = subPaths.filter(Files::isRegularFile)
+                    .map(Objects::toString)
+                    .collect(Collectors.toList());
+            System.out.println(subPathList);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 	public Status getStatus(){
 		return status;
@@ -209,4 +232,33 @@ public class Server {
 	public int getNumConnections(){
 		return numConnections;
 	}
-}
+private static boolean password(String username, String password) throws FileNotFoundException {
+        boolean bool = false;
+        File file = new File("userInfo.txt");
+        Scanner scan = new Scanner(file);
+        while(scan.hasNext()){
+            if(scan.next().equals(username) && scan.next().equals(password)){
+                bool = true;
+            }
+        }
+        return bool;
+    }
+  public static boolean users(String username) throws FileNotFoundException {
+        boolean bool = false;
+        File file = new File("userInfo.txt");
+        Scanner scan = new Scanner(file);
+        while(scan.hasNext()){
+            if(scan.next().equals(username)){
+                bool = true;
+            }
+            scan.next();
+        }
+        return bool;
+    }  public static void perm(File ofile, String username, String fname){
+        File makePrivate = new File(".\\Server\\".concat(username)+"\\Private" + fname);
+        try{
+            Files.copy(ofile.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){}
+        //ofile.delete();
+        System.out.println("Moved to private folder");
+    }}
