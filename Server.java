@@ -134,19 +134,39 @@ public class Server {
 	public void listen(){
 		System.out.println("Listening");
 		try(Socket socket = serverSocket.accept()) {
-			boolean runOps = false;
+                      DataInputStream din=new DataInputStream(socket.getInputStream());
+                         DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
+                          
+                         boolean RealUser=false;
+                         String username=" ";
+                         while(RealUser==false){
+                          username=din.readUTF();
+                         RealUser=users(username);
+                         dout.writeBoolean(RealUser);
+                        }
+                         String accessLevel=din.readUTF();
+                         boolean pas=true;
+                         if(accessLevel.equals("Admin")){
+                          pas=false;
+                         System.out.println(pas);}
+                         while(!pas){
+                         String password=din.readUTF();
+                         pas=password(username,password);
+                         dout.writeBoolean(pas);}
+                        
+                        
+                        
+                
+                         
+		
 			numConnections++;
 			System.out.println("Connection from " + socket.getLocalAddress().getHostAddress() + " detected");
                         System.out.println("Sending promts...");
-                        PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-                        pw.println("Select an action: ");
-                         pw.println("<View> - To view files on server");
-                          pw.println("<Download> - To download a file");
-                           pw.println("<Upload> - To upload a file");
-                            pw.println("<Permission> Set Permission");
-                        DataInputStream din=new DataInputStream(socket.getInputStream());
-                         DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
-                        String userinp=din.readUTF();
+                        String userinp=" ";
+                       while(!userinp.equals("Stop")){
+                     
+                      
+                        userinp=din.readUTF();
                     
                         
                         if(userinp.equals("Download")){
@@ -159,25 +179,15 @@ public class Server {
                         
                         else if(userinp.equals("Upload")){
                         uploadToServer(socket);}
-                            
+                       else if(userinp.equals("View")){
+                               String viewer=din.readUTF();
+                       if(viewer.equals("Admin View")){
+                       view(".\\Server\\".concat(username)+"\\Private",socket);
+                       view(".\\Server\\".concat(username), socket);}
+                       else{view(".\\Server\\".concat(username), socket);}}}    
+                       
                         
-                        /*
-			if(this.status == Status.Offline){
-				System.out.println("Connection denied"); // send message to client [Saying servers aren't available]
-			}
-			else if(this.status == Status.Full){
-				System.out.println("Servers are full"); // Send message to clients [Saying server is full and that they
-														// should try later
-			}
-			else {
-				Scanner s = new Scanner(socket.getInputStream());
-				System.out.println(numConnections);
-				System.out.println(s.nextLine());
-				PrintWriter msg = new PrintWriter(socket.getOutputStream(), true);
-				msg.println("The server says hi back");
-				// We create threads here (For now, we just let stuff send items through and stuff)
-			}*/
-		}
+                }
 
 		catch(IOException e){
 			System.out.println("Error while listening for connections");
@@ -199,15 +209,16 @@ public class Server {
 		}
 	}
         
-        public static void view(String folderPath){
+        public static void view(String folderPath, Socket s){
         Path path = Paths.get(folderPath);
+       
 
         try(Stream<Path> subPaths = Files.walk(path,1)){
-
+ PrintWriter pw=new PrintWriter(s.getOutputStream(),true);
             List<String> subPathList = subPaths.filter(Files::isRegularFile)
                     .map(Objects::toString)
                     .collect(Collectors.toList());
-            System.out.println(subPathList);
+            pw.println(subPathList);
         }
         catch (IOException e) {
             e.printStackTrace();
