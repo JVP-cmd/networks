@@ -45,40 +45,53 @@ public class Server {
          try{
                 DataInputStream din=new DataInputStream(s.getInputStream());
         DataOutputStream dout=new DataOutputStream(s.getOutputStream());
-        BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
+        
         String str=""; String filename="";
+        
         System.out.println("upload to Server started");
                     while(!str.equals("stop")){
+                      
                     str="bam";
                     dout.writeUTF(str);
                     dout.flush();
                     filename=din.readUTF();
                     filename+="Server's";
+                    str=din.readUTF();
                     long sz=Long.parseLong(din.readUTF());
                      byte b[]=new byte [1024];
                     FileOutputStream fos=new FileOutputStream(new File(filename),true);
                     long bytesRead;
+                    
+                 
                     do{
                     bytesRead=din.read(b,0,b.length);
-                    fos.write(b,0,b.length);}
+                    fos.write(b,0,b.length);
+                      
+                   
+                      }
                     while(!(bytesRead<1024));{
                      fos.close();
                      dout.close();
-                     s.close();}}}
+                     s.close();
+                      }
+      }
+         System.out.println("Upload complete");}
                     catch(Exception e){System.out.println(e);}}
 
 	private void DownloadFile(String filename, Socket s){
+             
           while(true){//infinite while loop to wait for the client to be ready to recieve
                 try{
-            s = serverSocket.accept();       
+                   
+                 
             DataInputStream din=new DataInputStream(s.getInputStream());
             DataOutputStream dout=new DataOutputStream(s.getOutputStream());
             
             String Data;
             Data=din.readUTF(); //input recived from the DownloadtoClient method in Client class (recives "bam ")
+       
+            while(!Data.equals("stop")){
          
-            if(!Data.equals("stop")){
-          
             System.out.println("Downloading File: "+filename);
             dout.writeUTF(filename);
             dout.flush();
@@ -87,6 +100,7 @@ public class Server {
             long sz=(int)file.length();
             byte b[]=new byte[1024];
             int read;
+            dout.writeUTF("stop");
             dout.writeUTF(Long.toString(sz));
             dout.flush();
             while((read=fileIn.read(b))!=1){
@@ -94,9 +108,9 @@ public class Server {
             dout.write(b,0,read);
             dout.flush();}
             fileIn.close();
-            dout.flush();}
+            dout.flush();
     
-            dout.writeUTF("stop");
+            }
             dout.flush();
              din.close();
             s.close();
@@ -132,16 +146,10 @@ public class Server {
                         
                     
                         userinp =din.readUTF();
-                       
+                    
                         DownloadFile(userinp,socket);}
                         
                         else if(userinp.equals("Upload")){
-                           
-                        
-                        
-                        dout.flush();
-                        
-                        
                         uploadToServer(socket);}
                             
                         

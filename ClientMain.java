@@ -1,4 +1,3 @@
-
 import java.net.*;
 import java.io.*;
 import java.util.*;
@@ -19,7 +18,6 @@ public class ClientMain {
             thisClient = new Client(ip, machineName);
             System.out.println("Current client details:\nClient Name: " + thisClient.getClientName() + "\nClient IP: " + thisClient.getIpAddress());
             Socket socket = new Socket("196.42.109.119", 59090);
-
             String yeet = "Client " + Client.numClients + " says Hello";*/
           
 String input=" ";
@@ -39,6 +37,7 @@ String input=" ";
             dout.writeUTF(input);
 
             if (input.equals("Download")) {
+                
                 System.out.println("Please enter the name of the file to be downloaded");
                 dout.writeUTF(inp.nextLine());
                 thisClient.DownloadtoClient(socket);

@@ -39,7 +39,7 @@ public class Client {
             
             String Data;
             Data=din.readUTF();
-            if(!Data.equals("stop")){
+            while(!Data.equals("stop")){
             System.out.println("Uploading File: "+filename);
             dout.writeUTF(filename);
             dout.flush();
@@ -48,14 +48,15 @@ public class Client {
             long sz=(int)file.length();
             byte b[]=new byte[1024];
             int read;
+            dout.writeUTF("stop");
             dout.writeUTF(Long.toString(sz));
             dout.flush();
             while((read=fileIn.read(b))!=1){
             dout.write(b,0,read);
             dout.flush();}
             fileIn.close();
-            dout.flush();}
-            dout.writeUTF("stop");
+             }
+           
             dout.flush();
              din.close();
             //s.close();
@@ -67,10 +68,12 @@ public class Client {
                     try{
                 DataInputStream din=new DataInputStream(s.getInputStream());
         DataOutputStream dout=new DataOutputStream(s.getOutputStream());
-        BufferedReader br=new BufferedReader(new InputStreamReader(System.in));
+      
      
         String str=" "; String filename="";
+ 
                     while(!str.equals("stop")){
+                       
                      
                     str="bam";
                 
@@ -78,6 +81,7 @@ public class Client {
                     dout.flush();
                     filename=din.readUTF();
                     filename+=" client's";
+                     str=din.readUTF();
                     long sz=Long.parseLong(din.readUTF());
                      byte b[]=new byte [1024];
                     FileOutputStream fos=new FileOutputStream(new File(filename),true);
@@ -86,7 +90,7 @@ public class Client {
                     try{do{
                     bytesRead=din.read(b,0,b.length);
                     
-                    //str=din.readUTF();
+                   
                     fos.write(b,0,b.length);
                     }
                     
