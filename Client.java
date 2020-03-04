@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 
 
@@ -43,7 +45,7 @@ public class Client {
             System.out.println("Uploading File: "+filename);
             dout.writeUTF(filename);
             dout.flush();
-            File file=new File(filename);
+            File file=new File(".\\Client", filename);
             FileInputStream fileIn=new FileInputStream(file);
             long sz=(int)file.length();
             byte b[]=new byte[1024];
@@ -58,7 +60,7 @@ public class Client {
              }
            
             dout.flush();
-             din.close();
+            // din.close();
             //s.close();
             }catch(ArrayIndexOutOfBoundsException e){System.out.println("Upload complete");break;}catch(EOFException e){System.out.println("Upload complete");break;}catch(Exception e){System.out.println(e);break;}
            
@@ -80,7 +82,7 @@ public class Client {
                     dout.writeUTF(str);
                     dout.flush();
                     filename=din.readUTF();
-                    filename+=" client's";
+                    
                      str=din.readUTF();
                     long sz=Long.parseLong(din.readUTF());
                      byte b[]=new byte [1024];
@@ -92,16 +94,24 @@ public class Client {
                     
                    
                     fos.write(b,0,b.length);
+                                         move(filename);
                     }
                     
                     while(!(bytesRead<1024));{//end of file exception here
-                        
+
                      fos.close();
-                     dout.close();
-                     s.close();
+                     //dout.close();
+                     //s.close();
                   }}catch(Exception e){System.out.println(e);}
                     
                    }}
                     catch(Exception e){System.out.println(e);}
-}
+}    public static void move(String file){
+        File f = new File(file);
+        File makePrivate = new File(".\\Client\\" + file);
+        try{
+            Files.copy(f.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){}
+        f.delete();
+    }
 }

@@ -10,7 +10,7 @@ public class ClientMain {
 
         try {
             Client thisClient=new Client("apples","bannnas");
- Socket socket = new Socket("196.42.109.119", 59090);
+ Socket socket = new Socket("localhost", 59090);
     DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
             DataInputStream din = new DataInputStream(socket.getInputStream());
            Scanner output=new Scanner(socket.getInputStream());
@@ -86,15 +86,24 @@ String input=" ";
             else if(input.equals("View")&&pas==false){
             dout.writeUTF("Public View");
             System.out.println(output.nextLine());}
+            else if (pas==true&&input.equals("Permission")){
+                dout.writeUTF("Permission");
+            System.out.println("Would you like to move a file to <Public/Private>");
+            String moveFileTo=scinput.nextLine();
+            dout.writeUTF(moveFileTo);
+            System.out.println("Enter the name of the file");
+            String filename=scinput.nextLine();
+            dout.writeUTF(filename);
+            System.out.println("Moved file");}
                 
               }
 
-        
+        socket.close();
 
             /*Scanner serverin = new Scanner(socket.getInputStream());
 				System.out.println(serverin.nextLine());*/
         } catch (Exception e) {
-            System.out.println("Error: 5 " + e.getMessage());
+            System.out.println("Error:  " + e.getMessage());
             System.exit(0);
         }
     }

@@ -49,7 +49,7 @@ public class Server {
 	private void printAllAccessible(String username, Socket socket){
 
 	}
-        private void uploadToServer(Socket s){
+        private void uploadToServer(String username,Socket s){
          try{
                 DataInputStream din=new DataInputStream(s.getInputStream());
         DataOutputStream dout=new DataOutputStream(s.getOutputStream());
@@ -63,7 +63,7 @@ public class Server {
                     dout.writeUTF(str);
                     dout.flush();
                     filename=din.readUTF();
-                    filename+="Server's";
+                    
                     str=din.readUTF();
                     long sz=Long.parseLong(din.readUTF());
                      byte b[]=new byte [1024];
@@ -74,19 +74,21 @@ public class Server {
                     do{
                     bytesRead=din.read(b,0,b.length);
                     fos.write(b,0,b.length);
-                      
+                      move(username,filename);
                    
                       }
                     while(!(bytesRead<1024));{
+                        
                      fos.close();
-                     dout.close();
-                     s.close();
+                 //    dout.close();
+               //      s.close();
                       }
+                    
       }
          System.out.println("Upload complete");}
                     catch(Exception e){System.out.println(e);}}
 
-	private void DownloadFile(String filename, Socket s){
+	private void DownloadFile(String filename,String username, Socket s){
              
           while(true){//infinite while loop to wait for the client to be ready to recieve
                 try{
@@ -103,7 +105,7 @@ public class Server {
             System.out.println("Downloading File: "+filename);
             dout.writeUTF(filename);
             dout.flush();
- File file=new File(filename);
+ File file=new File(".\\Server\\".concat(username), filename);
             FileInputStream fileIn=new FileInputStream(file);
             long sz=(int)file.length();
             byte b[]=new byte[1024];
@@ -120,8 +122,8 @@ public class Server {
     
             }
             dout.flush();
-             din.close();
-            s.close();
+             //din.close();
+            //s.close();
              
                }catch(ArrayIndexOutOfBoundsException e){System.out.println("Download complete");break;}catch(Exception e){System.out.println(e.getMessage());break;}
                 
@@ -168,23 +170,36 @@ public class Server {
                       
                         userinp=din.readUTF();
                     
-                        
+                         System.out.println("userinput:"+userinp);
                         if(userinp.equals("Download")){
                         
                         
                     
                         userinp =din.readUTF();
                     
-                        DownloadFile(userinp,socket);}
+                        DownloadFile(userinp,username, socket);}
                         
                         else if(userinp.equals("Upload")){
-                        uploadToServer(socket);}
+                        uploadToServer(username,socket);}
                        else if(userinp.equals("View")){
                                String viewer=din.readUTF();
                        if(viewer.equals("Admin View")){
                        view(".\\Server\\".concat(username)+"\\Private",socket);
                        view(".\\Server\\".concat(username), socket);}
-                       else{view(".\\Server\\".concat(username), socket);}}}    
+                       else{view(".\\Server\\".concat(username), socket);}}
+                      
+                       else if(userinp.equals("Permission")){
+                       String permfake=din.readUTF();
+                       String perm=din.readUTF();
+                       String filename=din.readUTF();
+                     System.out.println(perm);
+                       if(perm.equals("Public")){
+                           System.out.println("trying to move");
+                           moveToPublic(username,filename);
+                           
+                      }
+                       else{moveToPrivate(username,filename);
+                      }}}    
                        
                         
                 }
@@ -243,6 +258,32 @@ public class Server {
 	public int getNumConnections(){
 		return numConnections;
 	}
+        private static void move(String username,String file){
+        File f = new File(file);
+        File makePrivate = new File(".\\Server\\"+username+"\\"+ file);
+        try{
+            Files.copy(f.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){}
+        f.delete();
+    }
+         private static void moveToPrivate(String username,String file){
+        File f = new File(".\\Server\\"+username,file);
+        File makePrivate = new File(".\\Server\\"+username+"\\Private", file);
+        try{
+            Files.copy(f.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("toPrivate");
+        }catch(IOException e){System.out.println(e);}
+        f.delete();
+    }
+              private static void moveToPublic(String username,String file){
+        File f = new File(".\\Server\\"+username+"\\Private",file);
+        File makePublic = new File(".\\Server\\"+username, file);
+        try{
+            Files.copy(f.toPath(), makePublic.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("toPublic");
+        }catch(IOException e){System.out.println(e);}
+        f.delete();
+    }
 private static boolean password(String username, String password) throws FileNotFoundException {
         boolean bool = false;
         File file = new File("userInfo.txt");
@@ -265,11 +306,18 @@ private static boolean password(String username, String password) throws FileNot
             scan.next();
         }
         return bool;
-    }  public static void perm(File ofile, String username, String fname){
-        File makePrivate = new File(".\\Server\\".concat(username)+"\\Private" + fname);
+    }  public static void permPrivate(File ofile, String username, String fname){
+        File makePrivate = new File(".\\Server\\".concat(username)+"\\Private\\" + fname);
         try{
             Files.copy(ofile.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }catch(IOException e){}
-        //ofile.delete();
+        ofile.delete();//deletes old file
         System.out.println("Moved to private folder");
+    }public static void permPublic(File ofile, String username, String fname){
+        File makePublic = new File(".\\Server\\".concat(username) +"\\"+ fname);
+        try{
+            Files.copy(ofile.toPath(), makePublic.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){}
+        ofile.delete();//deletes old file
+        System.out.println("Moved to public folder");
     }}
