@@ -1,149 +1,276 @@
-import javax.imageio.IIOException;
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class Server{
+public class Server {
 
-    /**
-     * Main method to be run first before the client class
-     * @param args
-     * @throws Exception
-     */
-    public static void main(String args[])throws Exception {
-        dialogues();
-    }
+	private String ipAddress;
+	private String resourceDir;
+	public enum Status {Available, Offline, Full};
+	private Status status;
+	private final int socketNo;
+        private Socket s;
+	private int numConnections;
+	private ServerSocket serverSocket;
 
-    public static void dialogues() throws Exception {
-        ServerSocket ss=new ServerSocket(5000);
-        Socket socket=ss.accept();
-         DataInputStream din=new DataInputStream(socket.getInputStream());
-            DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
-              PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
-        Scanner sc = new Scanner(System.in);
-        boolean acccess = false;
-        boolean success = false;
-        String userName = "";
+	public Server(String ipAddress, String resourceDir, int socketNo){
+		this.ipAddress = ipAddress;
+		this.resourceDir = resourceDir;
+		status = Status.Offline;
+		this.socketNo = socketNo;
+		numConnections = 0;
+	}
 
-        pw.println("Welcome to the server");
-        pw.println("User name: ");    // Ask user for their login information
-System.out.println("Waiting for user input"); 
-        dout.writeBoolean(acccess);
+	public void initialize(){ // Initializes server socket using specified port number
+		try {
+			serverSocket = new ServerSocket(this.socketNo);
+                       
+			System.out.println("Socket initialized");
 
-        while (!success) {               // Checks if username is in the records and repeats the prompt if it's incorrect
-            userName = din.readUTF();
-            System.out.println(userName);
-            success = users(userName);
-            System.out.println("Sending boolean success");
-             dout.writeBoolean(success);
-            if (!success)
-               
-                pw.println("Unknown user, try again.");        //Prompt to re-enter the username if intial was incorrect
-        }
+			// Generate all paths in server [Will have res folder that keeps all files on server]
+			//
 
-        pw.println("Excess level? (Public/Admin): ");       // Prompt user to specify access level
-        success = false;
-        String ex = din.readUTF();
+			status = Status.Available;
+		}
+		catch(IOException e) {
+			System.out.println("Error setting up server on port " + this.socketNo);
+		}
+	}
 
-        if (ex.equals("Public")) {
-            acccess = false;
-        } else if (ex.equals("Admin")) {
-            pw.println("Password: ");
-            System.out.println("Sending success boolean");
-dout.writeBoolean(success);
-            while (!success) {
-                String pass = din.readUTF();
-                success = password(userName, pass);
-                dout.writeBoolean(success);
-                if (!success) pw.println("Try again");
-            }
-            acccess = true;
-            pw.println("Welcome back " + userName + "!!");
-        }
-        String request = "";
+	private void printAllAccessible(String username, Socket socket){
 
-        while (!(request.equals("Q"))) {
-            pw.println("Select an action: ");
-            pw.println("<View> - To view files on server");
-            pw.println("<Download> - To download a file");
-            System.out.println("Check if the user has admin rights");
-            dout.writeBoolean(acccess);
-            if (acccess){ pw.println("<P> - To set Permissions");}
-            pw.println("<Q> To quit");
+	}
+        private void uploadToServer(String username,Socket s){
+         try{
+                DataInputStream din=new DataInputStream(s.getInputStream());
+        DataOutputStream dout=new DataOutputStream(s.getOutputStream());
+        
+        String str=""; String filename="";
+        
+        System.out.println("upload to Server started");
+                    while(!str.equals("stop")){
+                      
+                    str="bam";
+                    dout.writeUTF(str);
+                    dout.flush();
+                    filename=din.readUTF();
+                    
+                    str=din.readUTF();
+                    long sz=Long.parseLong(din.readUTF());
+                     byte b[]=new byte [1024];
+                    FileOutputStream fos=new FileOutputStream(new File(filename),true);
+                    long bytesRead;
+                    
+                 
+                    do{
+                    bytesRead=din.read(b,0,b.length);
+                    fos.write(b,0,b.length);
+                      
+                   
+                      }
+                    while(!(bytesRead<1024));{
+                        move(username,filename);
+                     fos.close();
+                     dout.close();
+                     s.close();
+                      }
+      }
+         System.out.println("Upload complete");}
+                    catch(Exception e){System.out.println(e);}}
 
-            request = din.readUTF();
- dout.writeBoolean(acccess);
-            if (request.equals("View")) {
-               
-                if (acccess) {
-                    view("./Server/".concat(userName) + "/Private");
-                    view("./Server/".concat(userName));
-                } else view("./Server/".concat(userName));
-            } else if (request.equals("P") && acccess) {
-                pw.println("Type filename:");
-                String filename = din.readUTF();
-                pw.println("Make Private? (Y/N)");
-                String p = din.readUTF();
-                File f = new File("./Server/".concat(userName), filename);
-                perm(f, userName, filename);
-            } else if (request.equals("Download")) {
-               
-                pw.println("Give the filename");
+	private void DownloadFile(String filename,String username, Socket s){
+             
+          while(true){//infinite while loop to wait for the client to be ready to recieve
+                try{
+                   
+                 
+            DataInputStream din=new DataInputStream(s.getInputStream());
+            DataOutputStream dout=new DataOutputStream(s.getOutputStream());
+            
+            String Data;
+            Data=din.readUTF(); //input recived from the DownloadtoClient method in Client class (recives "bam ")
+       
+            while(!Data.equals("stop")){
+         
+            System.out.println("Downloading File: "+filename);
+            dout.writeUTF(filename);
+            dout.flush();
+ File file=new File(".\\Server\\".concat(username), filename);
+            FileInputStream fileIn=new FileInputStream(file);
+            long sz=(int)file.length();
+            byte b[]=new byte[1024];
+            int read;
+            dout.writeUTF("stop");
+            dout.writeUTF(Long.toString(sz));
+            dout.flush();
+            while((read=fileIn.read(b))!=1){
                 
-                String filename = din.readUTF();
-
-                Threadmanager server = new Threadmanager(5000, filename, userName);
-                new Thread(server).start();
-
-                try {
-                    Thread.sleep(20 * 1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                System.out.println("Stopping Server");
-                server.stopT();
-
+            dout.write(b,0,read);
+            dout.flush();}
+            fileIn.close();
+            dout.flush();
+    
             }
-        }
-    }
+            dout.flush();
+             din.close();
+            s.close();
+             
+               }catch(ArrayIndexOutOfBoundsException e){System.out.println("Download complete");break;}catch(Exception e){System.out.println(e.getMessage());break;}
+                
+            }
+
+	}
+
+	
+
+	public void listen(){
+		System.out.println("Listening");
+		try(Socket socket = serverSocket.accept()) {
+                      DataInputStream din=new DataInputStream(socket.getInputStream());
+                         DataOutputStream dout=new DataOutputStream(socket.getOutputStream());
+                          
+                         boolean RealUser=false;
+                         String username=" ";
+                         while(RealUser==false){
+                          username=din.readUTF();
+                         RealUser=users(username);
+                         dout.writeBoolean(RealUser);
+                        }
+                         String accessLevel=din.readUTF();
+                         boolean pas=true;
+                         if(accessLevel.equals("Admin")){
+                          pas=false;
+                         System.out.println(pas);}
+                         while(!pas){
+                         String password=din.readUTF();
+                         pas=password(username,password);
+                         dout.writeBoolean(pas);}
+                        
+                        
+                        
+                
+                         
+		
+			numConnections++;
+			System.out.println("Connection from " + socket.getLocalAddress().getHostAddress() + " detected");
+                        System.out.println("Sending promts...");
+                        String userinp=" ";
+                       while(!userinp.equals("Stop")){
+                     
+                      
+                        userinp=din.readUTF();
+                    
+                        
+                        if(userinp.equals("Download")){
+                        
+                        
+                    
+                        userinp =din.readUTF();
+                    
+                        DownloadFile(userinp,username, socket);}
+                        
+                        else if(userinp.equals("Upload")){
+                        uploadToServer(username,socket);}
+                       else if(userinp.equals("View")){
+                               String viewer=din.readUTF();
+                       if(viewer.equals("Admin View")){
+                       view(".\\Server\\".concat(username)+"\\Private",socket);
+                       view(".\\Server\\".concat(username), socket);}
+                       else{view(".\\Server\\".concat(username), socket);}}
+                       else if(userinp.equals("Permissions")){
+                       String perm=din.readUTF();
+                       String filename=din.readUTF();
+                     
+                       if(perm.equals("Public")){
+                           File myfile=new File(".\\Server\\".concat(username)+"\\Private",filename);
+                           permPublic(myfile,username,filename);
+                      }
+                       else{File myfile=new File(".\\Server\\".concat(username),filename);
+                       permPrivate(myfile,username,filename);}}}    
+                       
+                        
+                }
+
+		catch(IOException e){
+			System.out.println("Error while listening for connections");
+		}
+
+	}
+
+	public ServerSocket getServerSocket(){
+		return serverSocket;
+	}
 
 
-    /**
-     * View contents in the server
-     */
-
-    public static void view(String folderPath){
+	public void receiveConnection(Socket socket){
+		try{
+			numConnections++;
+		}
+		catch(Exception e){
+			System.out.println("Connection to server was unsuccessful");
+		}
+	}
+        
+        public static void view(String folderPath, Socket s){
         Path path = Paths.get(folderPath);
+       
 
         try(Stream<Path> subPaths = Files.walk(path,1)){
-
+ PrintWriter pw=new PrintWriter(s.getOutputStream(),true);
             List<String> subPathList = subPaths.filter(Files::isRegularFile)
                     .map(Objects::toString)
                     .collect(Collectors.toList());
-            System.out.println(subPathList);
+            pw.println(subPathList);
         }
         catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    /**
-     * Checks if password is correct for the given username
-     * @param username
-     * @param password
-     * @return
-     * @throws FileNotFoundException
-     */
-    private static boolean password(String username, String password) throws FileNotFoundException {
+	public Status getStatus(){
+		return status;
+	}
+
+	public String getResourceDir(){
+		return resourceDir;
+	}
+
+	public String getIpAddress(){
+		return ipAddress;
+	}
+
+	public int getSocketNo(){
+		return socketNo;
+	}
+	public int getNumConnections(){
+		return numConnections;
+	}
+        private static void move(String username,String file){
+        File f = new File(file);
+        File makePrivate = new File(".\\Server\\"+username+"\\"+ file);
+        try{
+            Files.copy(f.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){}
+        f.delete();
+    }
+         private static void moveToPrivate(String username,String file){
+        File f = new File(file);
+        File makePrivate = new File(".\\Server\\"+username+"\\"+ file);
+        try{
+            Files.copy(f.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){}
+        f.delete();
+    }
+private static boolean password(String username, String password) throws FileNotFoundException {
         boolean bool = false;
         File file = new File("userInfo.txt");
         Scanner scan = new Scanner(file);
@@ -154,15 +281,7 @@ dout.writeBoolean(success);
         }
         return bool;
     }
-
-
-    /**
-     * Checks if given user name is known to the server
-     * @param username
-     * @return
-     * @throws FileNotFoundException
-     */
-    public static boolean users(String username) throws FileNotFoundException {
+  public static boolean users(String username) throws FileNotFoundException {
         boolean bool = false;
         File file = new File("userInfo.txt");
         Scanner scan = new Scanner(file);
@@ -173,23 +292,18 @@ dout.writeBoolean(success);
             scan.next();
         }
         return bool;
-    }
-
-
-    /**
-     * Makes file private or invisible to users using public access
-     * @param ofile
-     * @param username
-     * @param fname
-     */
-    public static void perm(File ofile, String username, String fname){
-        File makePrivate = new File("./Server/".concat(username)+"/Private/" + fname);
+    }  public static void permPrivate(File ofile, String username, String fname){
+        File makePrivate = new File(".\\Server\\".concat(username)+"\\Private\\" + fname);
         try{
             Files.copy(ofile.toPath(), makePrivate.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }catch(IOException e){}
-        //ofile.delete();
+        ofile.delete();//deletes old file
         System.out.println("Moved to private folder");
-    }
-
-
-}
+    }public static void permPublic(File ofile, String username, String fname){
+        File makePublic = new File(".\\Server\\".concat(username) +"\\"+ fname);
+        try{
+            Files.copy(ofile.toPath(), makePublic.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }catch(IOException e){}
+        ofile.delete();//deletes old file
+        System.out.println("Moved to public folder");
+    }}
