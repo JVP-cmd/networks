@@ -2,13 +2,13 @@ package server;
 
 public class FileOperation {
 	private User user;
-	private String fileName;
+	private FileDetails file;
 	public enum FileOp {UPLOAD, DOWNLOAD, MOVE, NONE}
 	private FileOp fileOp;
 
-	public FileOperation(User user, String fileName, FileOp fileOp){
+	public FileOperation(User user, FileDetails file, FileOp fileOp){
 		this.user = user;
-		this.fileName = fileName;
+		this.file = file;
 		this.fileOp = fileOp;
 	}
 
@@ -20,7 +20,8 @@ public class FileOperation {
 		return fileOp;
 	}
 
-	public String getFileName() {
-		return fileName;
+	public FileDetails getFile() {
+		return file;
 	}
+
 }

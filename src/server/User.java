@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class User {
 
 	private InetAddress connectionAddress;
-	public enum Access {SUPER, ADMIN , PRIVATE, PUBLIC}
+	public enum Access { ADMIN, PUBLIC}
 	private Access access;
 	private final String userName;
 	private final String password;
@@ -46,9 +46,9 @@ public class User {
 	public synchronized boolean logIn(String userName, String password, InetAddress connectionAddress){
 		System.out.println("Attempting login..");
 		if(!loggedIn.get()) { // User is not logged in
-			if (this.userName.toLowerCase().equals(userName) && this.password.equals(password)) { // Correct details entered
+			if (this.userName.equals(userName.toLowerCase()) && this.password.equals(password)) { // Checks if the correct user details were entered
 				System.out.println("User login successful");
-				//serverMessage = 0; // User login successful
+				// serverMessage = 0; // User login successful
 				loggedIn.set(true);
 				this.connectionAddress = connectionAddress;
 				return true;

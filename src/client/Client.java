@@ -1,7 +1,5 @@
 package client;
 
-import jdk.nashorn.internal.runtime.arrays.ArrayIndex;
-
 import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
@@ -159,4 +157,7 @@ public class Client {
 
 	// So for some odd reason, when I smoke, I can't concentrate on anything. Especially when I'm tired, guess I
 	// shouldn't smoke when I'm in the zone.
+
+
+	// Alright, so we removing the client.java class from the project. Tyty.
 }
