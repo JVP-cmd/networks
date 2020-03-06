@@ -7,10 +7,9 @@ import java.util.*;
 
 public class ClientMain {
 
-	private static final String downloadPath = System.getProperty("user.home") + "\\Downloads\\YeetLoader\\";
+	private static final String downloadPath = System.getProperty("user.home") + "\\Downloads\\UCT_PIRATING_SERVER\\";
 	private static PrintWriter clientMessenger;
 	private static boolean admin;
-	private static boolean contributor; // When a public connection is detected, but the user doesn't have an account [So they cannot upload]
 	private static Socket clientSocket;
 	private static Scanner inp = new Scanner(System.in);
 	private static Scanner serverMessageScanner;
@@ -18,10 +17,15 @@ public class ClientMain {
 	private static String username;
 
  // Start code section
+
+	/**
+	 * Runs user through the login process
+	 * @return Success value of the login attempt
+	 */
 	private static boolean logIn(){
 		try{
+			boolean cantConnect = Boolean.parseBoolean(serverMessageScanner.nextLine());
 			while(true) {
-				boolean cantConnect = Boolean.parseBoolean(serverMessageScanner.nextLine());
 				System.out.print(serverMessageScanner.nextLine());
 				if(cantConnect){ // Exits program if the servers are "full"
 					System.out.println(". Send any input to close the program");
@@ -32,39 +36,34 @@ public class ClientMain {
 				String userName = inp.nextLine().trim();
 				clientMessenger.println(userName);
 				// Server asks user for password (or sends user off if they decide to quit the program)
-				if(userName.toUpperCase().equals("PUBLIC")){
-					contributor = false;
+				if (clientSocket.isConnected()) {
+					System.out.println(serverMessageScanner.nextLine());
+				} else {
+					System.out.println("Connection to server lost =(");
+					System.exit(0);
 				}
-				else {
-					if (clientSocket.isConnected()) {
-						System.out.println(serverMessageScanner.nextLine());
+				if (userName.equals("quit")) {
+					System.exit(0);
+				}
+				String password = inp.nextLine();
+				clientMessenger.println(password);
+				boolean success = Boolean.parseBoolean(serverMessageScanner.nextLine()); // Receives message from server as to whether or not
+				System.out.println(serverMessageScanner.nextLine()); // Notifies user whether or not the login attempt was successful
+				if (success) {
+					String perms = serverMessageScanner.nextLine();
+					username = userName;
+					if (perms.equals("ADMIN")) {
+						accessString = perms;
+						admin = true;
 					} else {
-						System.out.println("Connection to server lost =(");
-						System.exit(0);
+						//serverMessageScanner.nextLine(); // This write is here to
+						accessString = perms;
+						admin = false;
 					}
-					if (userName.equals("quit")) {
-						System.exit(0);
-					}
-					String password = inp.nextLine();
-					clientMessenger.println(password);
-					boolean success = Boolean.parseBoolean(serverMessageScanner.nextLine()); // Receives message from server as to whether or not
-					System.out.println(serverMessageScanner.nextLine()); // Notifies user whether or not the login attempt was successful
-
-					if (success) {
-						String perms = serverMessageScanner.nextLine();
-						username = userName;
-						contributor = false;
-						if (perms.equals("ADMIN")) {
-							accessString = perms;
-							admin = true;
-						} else {
-							accessString = perms;
-							admin = false;
-						}
-						return true;
-					}
+					return true;
 				}
 			}
+
 		}
 		catch (Exception e){
 			e.printStackTrace();
@@ -72,88 +71,109 @@ public class ClientMain {
 		}
 	} // Login works buttery smooth
 
+	/**
+	 * Shows the user on the client side the files that they can access. If there are no accessible files, the user will be informed about
+	 */
 	private static void viewFiles(){
-		int numFiles = Integer.parseInt(serverMessageScanner.nextLine());
+		int numFiles = Integer.parseInt(serverMessageScanner.nextLine()); // Receives the number of files that can be shared from the server
+
 		if(numFiles < 1){
-			System.out.println("No files have been saved to the server yet (None have been logged yet)");
+			// Messages that are printed when there are no files to be shared on the server
+			if(admin){
+				System.out.println("No files have been stored on the server");
+			}
+			else {
+				System.out.println("No files are available to be accessed (None have been logged yet)");
+			}
 		}
 		else {
-			System.out.println("Total number of accessible files on server: " + numFiles + "\n");
+			// both the client and the thread maintaining the conneciton loop through this together (Storing the string acts as a "delay" for when the file is received)
+			System.out.println("Total number of accessible files on the server: " + numFiles + "\n");
 			for (int i = 0; i < numFiles; i++) {
 				String b = serverMessageScanner.nextLine();
 				System.out.println(b);
 			}
 		}
-		//clientMessenger.println("done");
 	}
 
+	/**
+	 *	Sends download request to servers and, once the request is accepted,
+	 * @param filename
+	 */
 	private static void downloadFile(String filename){
 		// Controls here
 
 		// NB!!!! Make sure that only the correct operations can be ran at a time
 
-		try {
-			clientMessenger.println(filename);
-			if (!(serverMessageScanner.nextLine().equals("EXIST"))) { // checks exists message from server and then prints it
-				System.out.println("File does not exist. Please make sure that you write out the full directory of the file [Use \"VIEW\" operation to see which files are available for download");
-			} else {
-				DataInputStream din = new DataInputStream(clientSocket.getInputStream());
-				DataOutputStream dout = new DataOutputStream(clientSocket.getOutputStream());
+		clientMessenger.println(filename);
 
+		String availableToDown = serverMessageScanner.nextLine();
+		if(availableToDown.equals("CANTDOWN")){
+			System.out.println("The file you are trying to download is not available at this moment");
+		}
+		else {
+			try {
+				String downExist = serverMessageScanner.nextLine();
+				if (!(downExist.equals("EXIST"))) { // checks exists message from server and then prints it
+					System.out.println("File does not exist. Please make sure that you write out the full directory of the file [Use \"VIEW\" operation to see which files are available for download");
+				}
+				else {
 
-				String str = " ";
+					DataInputStream din = new DataInputStream(clientSocket.getInputStream());
+					DataOutputStream dout = new DataOutputStream(clientSocket.getOutputStream());
 
-				while (!str.equals("stop")) {
+					String str = " ";
 					str = "bam";
-					dout.writeUTF(str);
+					dout.writeUTF(str); // Sends header line to server before receiving specified file data
 					dout.flush();
 					filename = din.readUTF();
-					String downLocation = downloadPath + filename;
+					String downLocation = downloadPath + filename; // For client, this location will be their downloads folder (Maybe implement an arg based download path later?)
 					File f = new File(downLocation);
-
-					if(!f.exists()){
-						boolean dirsmade = f.getParentFile().mkdirs();
-						if(dirsmade){
-							System.out.println("Directory made successfully.");
-						}
+					if (!f.exists()) { // creates relevant directories needed for saving file
+						f.getParentFile().mkdirs();
 					}
-					str = din.readUTF();
-					long sz = Long.parseLong(din.readUTF());
-					System.out.println(sz);
+					str = din.readUTF(); // reads "bam" header line from server and then initiates file receival from server
+					long fileSize = Long.parseLong(din.readUTF()); // receives file size (used mainly for ensuring that file transfer transfers an exact copy of the sent file)
 					byte b[] = new byte[1]; // Reads 1 byte of data from din at a time
-
-					FileOutputStream fos = new FileOutputStream(f, false);
-					long bytesRead = 1;
+					FileOutputStream fos = new FileOutputStream(f, false); // writes
 					long downSize = 0;
 					System.out.println("Downloading file: " + f.getName());
-
+					int downmarker = 0;
 					try {
 						do {
-							bytesRead = din.read(b, 0, b.length);
+							din.read(b, 0, b.length);
 							fos.write(b, 0, b.length);
 							downSize++;
+							int a = trackProg(downSize, fileSize, downmarker);
+							downmarker = a;
 						}
-						while (downSize < sz);
+						while (downSize < fileSize);
 						//end of file exception here
-
 						fos.close();
 						dout.flush();
 						System.out.println("Download to Client complete. Check the " + f.getParent() + " folder in your downloads folder");
-					}
-					catch (Exception e) {
+					} catch (Exception e) {
 						System.out.println(e);
 					}
 
+					//}
 				}
 			}
-		}
-		catch(Exception e){
-			e.printStackTrace();
+			catch(SecurityException e){
+				System.out.println("Security exception detected. Are you sure you have access to this program?");
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
+	/**
+	 *
+	 * @param filename The name of the file
+	 */
 	public static void uploadFile(String filename) {
-		//while (true) {
+		System.out.flush();
 		File file = new File(filename);
 		if(!file.exists()){
 			clientMessenger.println("DNEXIST");
@@ -170,30 +190,38 @@ public class ClientMain {
 				DataOutputStream dout = new DataOutputStream(clientSocket.getOutputStream());
 				String Data;
 				Data = din.readUTF();
-				System.out.println(Data);
-				dout.writeUTF(filename);
-				dout.flush();
-				dout.flush();
-				if (din.readUTF().toUpperCase().equals("CANRECEIVE")) {
-					System.out.println("Can upload file to server");
-					FileInputStream fileIn = new FileInputStream(file);
-					long fileSize = file.length();
-					byte b[] = new byte[1];
-					int read;
-					dout.writeUTF("stop");
-					dout.writeUTF(Long.toString(fileSize));
+				if(Data.equals("bam")) {
+					dout.writeUTF(filename);
 					dout.flush();
-					System.out.println("Uploading File: " + filename.split("/")[filename.split("/").length - 1]);
-					while ((read = fileIn.read(b)) > 0) {
-						dout.write(b, 0, read);
+					dout.flush();
+					String receival = din.readUTF();
+					if (receival.toUpperCase().equals("CANRECEIVE")) {
+						System.out.println("Can upload file to server");
+						FileInputStream fileIn = new FileInputStream(file);
+						long fileSize = file.length();
+						byte b[] = new byte[1];
+						int read;
+						dout.writeUTF("stop");
+						dout.writeUTF(Long.toString(fileSize));
 						dout.flush();
+						System.out.println("Uploading File: " + filename.split("/")[filename.split("/").length - 1]);
+						int downmarker = 0;
+						long upSize = 0;
+						while ((read = fileIn.read(b)) > 0) {
+							dout.write(b, 0, read);
+							dout.flush();
+							upSize++;
+							int a = trackProg(upSize, fileSize, downmarker);
+							downmarker = a;
+						}
+						fileIn.close();
+						dout.flush();
+						String s = serverMessageScanner.nextLine();
+						System.out.println(s);
 					}
-					fileIn.close();
-					dout.flush();
-					System.out.println(serverMessageScanner.nextLine());
-				}
-				else{
-					System.out.println("Cannot interact with file. File is in use");
+					else {
+						System.out.println("Cannot upload specified file to database. File is currently in use");
+					}
 				}
 			}catch (FileNotFoundException e) {
 				System.out.println("The file that has been entered cannot be found");
@@ -204,10 +232,74 @@ public class ClientMain {
 		}
 	}
 
-	public static void changePerms(String filename){
+	/**
+	 * Only available to administrator users. This changes the accessibility of the file (makes a file that's public private and a file that's private public)
+	 * @param filename The name of the file whose permissions will be changed. Permissions can only be changed by
+	 */
+	private static void changePerms(String filename){
+		System.out.println("Attempting permission change");
+		clientMessenger.println(filename);
+		String canMove = serverMessageScanner.nextLine();
+		if(!(canMove.toUpperCase().equals("CANTMOVE"))) {
+			String success = serverMessageScanner.nextLine();
+			if (success.equals("SUCCESS")) {
+				System.out.println("Permission change successful");
+			} else if (success.equals("UNSUCCESS")) {
+				System.out.println("Permission change unsuccessful. Please make sure that you entered the correct file name");
+			}
+		}
+		else{
+			System.out.println("The current file cannot be moved (A user is currently accessing the file)");
+		}
 
 	}
 
+	private static int trackProg(long size, long fullSize, int marker){
+
+		double downProg = (double)size / (double)fullSize;
+		if (downProg > 0.1 && marker < 1) {
+			System.out.println("10% complete");
+			return 1;
+		}
+		if (downProg > 0.2 && marker < 2) {
+			System.out.println("20% complete");
+			return 2;
+		}
+		if (downProg > 0.3 && marker < 3) {
+			System.out.println("30% complete");
+			return 3;
+		}
+		if (downProg > 0.4 && marker < 4) {
+			System.out.println("40% complete");
+			return 4;
+		}
+		if (downProg > 0.5 && marker < 5) {
+			System.out.println("50% complete");
+			return 5;
+		}
+		if (downProg > 0.6 && marker < 6) {
+			System.out.println("60% complete");
+			return 6;
+		}
+		if (downProg > 0.7 && marker < 7) {
+			System.out.println("70% complete");
+			return 7;
+		}
+		if (downProg > 0.8 && marker < 8) {
+			System.out.println("80% complete");
+			return 8;
+		}
+		if (downProg > 0.9 && marker < 9) {
+			System.out.println("90% complete");
+			return 9;
+		}
+		return marker;
+	}
+
+	/**
+	 * Main Method that is ran on the client-side of the program. The client must be ran after the server is online
+	 * @param args args[0]: IP Address of the server; args[1]: server port number
+	 */
 	public static void main(String[] args){
 		try {
 
@@ -247,7 +339,9 @@ public class ClientMain {
 			if(signedIn) {
 				clientMessenger.println(autoOp); // Sends auto operation flag to server
 				if (autoOp) {
-					System.out.println("Automatic operations ran");
+					// System.out.println("Automatic operations ran");
+
+
 				}
 				else {
 					while (true) {
@@ -257,7 +351,8 @@ public class ClientMain {
 							System.out.println("Server is offline, thanks for using us! :D");
 							break;
 						}
-						System.out.println("\nAccess level: " + accessString);
+						System.out.println("\nCurrent user: " + username);
+						System.out.println("Access level: " + accessString);
 						System.out.println("Select an action: \n<View> - To view files on server\n<Upload> - Upload a file to the server\n<Download> - To download a file");
 						if(admin) {
 							System.out.println("<Perm> - Set Permissions");
@@ -272,7 +367,7 @@ public class ClientMain {
 							viewFiles();
 						}
 						else if(operationInput.toUpperCase().trim().equals("UPLOAD")){
-							System.out.println("Enter the full path name of the file that you would like to upload:");
+							System.out.println("Enter the full path name of the file that you would like to upload [note that folders will not be sent to the server]:");
 							String file = inp.nextLine();
 							uploadFile(file);
 						}

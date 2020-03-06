@@ -24,6 +24,13 @@ public class Server {
 	private ArrayList<FileOperation> fileOperations;
 	private ArrayList<FileDetails> fileRepoArr;
 
+	/**
+	 * Server class that keeps track of
+	 * @param fileRepoDirectory The directory that all files can be found
+	 * @param userDB The name of the user database file that will store all user data
+	 * @param port The port number of the Connection Socket
+	 * @param maxConnections The maximum number of users that the server can take
+	 */
 	public Server(String fileRepoDirectory, String userDB, int port, int maxConnections){
 		this.maxConnections = maxConnections;
 		this.fileRepoDirectory = fileRepoDirectory;
@@ -33,10 +40,13 @@ public class Server {
 		numConnections = new AtomicInteger(0);
 	}
 
+	/**
+	 * Initializes the server by creating the server socket at specified port number, and goes through the necessary steps in order for the server to be functional
+	 */
 	public void initialize(){ // Initializes server socket using specified port number
 		try {
 			serverSocket = new ServerSocket(this.port, 0, InetAddress.getLocalHost());
-			System.out.println("Socket initialized");
+			printToServerInterface("Socket initialized", ServerMain.pauseServerPrints);
 			users = new ArrayList<>();
 			fileOperations = new ArrayList<>();
 			fileRepoArr = new ArrayList<>();
@@ -70,7 +80,7 @@ public class Server {
 			fileReader.close();
 			userFile.close();
 
-			System.out.println("Users populated");
+			printToServerInterface("Users populated", ServerMain.pauseServerPrints);
 			// Used for testing purposes
 			initializeRepo();
 			serverThreads = new ArrayList<>();
@@ -81,7 +91,7 @@ public class Server {
 			// Generate all paths in server [Will have res folder that keeps all files on server]
 			//
 
-			System.out.println("Server ready to handle connections...");
+			printToServerInterface("Server ready to handle connections...", ServerMain.pauseServerPrints);
 			status = Status.AVAILABLE;
 		}
 		catch(IOException e) {
@@ -90,21 +100,24 @@ public class Server {
 		}
 	}
 
-
+	/**
+	 * Listens for a connection attempts to the specified server socket port number. When a connection is accepted, a new thread is created which is used to allow clients to communicate
+	 * with the server
+	 */
 	public void listen(){
-		System.out.println("Listening");
+		printToServerInterface("Listening", ServerMain.pauseServerPrints);
 		try{
 			Socket socket = serverSocket.accept();
 			// Start threading from here
-			System.out.println("Connection from " + socket.getLocalAddress().getHostAddress() + " detected");
+			printToServerInterface("Connection from " + socket.getLocalAddress().getHostAddress() + " detected", ServerMain.pauseServerPrints);
 			PrintWriter pw = new PrintWriter(socket.getOutputStream(), true);
 			if(this.status == Status.OFFLINE){
-				System.out.println("Connection denied"); // send message to client [Saying servers aren't available]
+				printToServerInterface("Connection denied", ServerMain.pauseServerPrints); // send message to client [Saying servers aren't available]
 				pw.println("TRUE");
 				pw.println("Connection denied. Server is offline"); // Impossible to get this message. But if you get it, well done, you broke the program :^)
 			}
 			else if(this.status == Status.FULL){
-				System.out.println("Servers are full"); // Send message to clients [Saying server is full and that they
+				printToServerInterface("Servers are full", ServerMain.pauseServerPrints); // Send message to clients [Saying server is full and that they
 														// should try later
 				pw.println("TRUE");
 				pw.println("Connection denied. Server are full");
@@ -120,16 +133,16 @@ public class Server {
 				numConnections.getAndIncrement();
 
 				if(numConnections.get() >= maxConnections){
-					System.out.println("Connection load limit reached");
+					printToServerInterface("Connection load limit reached", ServerMain.pauseServerPrints);
 					this.status = Status.FULL;
 				}
 			}
 		}
 		catch(SocketException e){
-			System.out.println("Socket interrupted");
+			printToServerInterface("Socket interrupted", ServerMain.pauseServerPrints);
 		}
 		catch(IOException e){
-			System.out.println("Error while listening for connections");
+			printToServerInterface("Error while listening for connections", ServerMain.pauseServerPrints);
 		}
 		catch(Exception e){
 			e.printStackTrace();
@@ -137,6 +150,9 @@ public class Server {
 
 	}
 
+	/**
+	 * Waits for all other user operations to complete and then closes the server. Any new connections that try to connect to the server won't be able to connect
+	 */
 	public void close(){
 		status = Status.OFFLINE;
 		try {
@@ -149,66 +165,80 @@ public class Server {
 			s.close();
 		}
 		catch(Exception e){
-			System.out.println("Problem encountered with closing connections");
+			printToServerInterface("Problem encountered with closing connections", ServerMain.pauseServerPrints);
 		}
 	}
 
-	// Private methods responsible for data management [These methods will be in connection threads]
-	// Protected accessor methods
+	/**
+	 * Number of users
+	 * @return the number of user accounts that are stored on the server
+	 */
 	protected int getNumUsers(){
 		return users.size();
 	}
 
+	/**
+	 * Returns a user at a specifically given index. Used mainly in the ConnectionThread class
+	 * @param userIndex the index number of the user
+	 * @return the user at the given index number
+	 */
 	protected User getUser(int userIndex){
 		return users.get(userIndex);
 	}
 
+	/**
+	 * Checks if a specific file operation is valid.
+	 * @param fileName the name of the file whose operation we want to see
+	 * @return the Operation type of a specific File Operation
+	 */
 	private synchronized FileOperation.FileOp checkFileOperations(String fileName){
 		for(int i = 0; i <fileOperations.size(); i++){
-			if(fileOperations.get(i).getFile().equals(fileName)){
-				return fileOperations.get(i).getFileOp();
+			if(fileOperations.get(i).getFile() != null) { // Checks if the operation has a file linked to it (At some point in time, we create a null File Operation object
+				if (fileOperations.get(i).getFile().equals(getFileDetails(fileName))) {
+				}
 			}
 		}
 		return FileOperation.FileOp.NONE;
 	}
 
-	private ArrayList<FileOperation> checkFileDownOps(String fileName){
-		ArrayList<FileOperation> ops = new ArrayList<>();
-		for(int i = 0; i < fileOperations.size(); i++){
-			// Add available files to ops [based on fileName argument]
-			// Admin gets to make 2 calls (Can access public and private)
-			// Some files can only have 1 name since this is an open platform kinda thing
-		}
-		return ops;
-	}
-
+	/**
+	 *
+	 * @param address
+	 * @param userName
+	 * @param password
+	 * @return
+	 */
 	private boolean checkLogin(InetAddress address, String userName, String password){
-		System.out.println("Login attempt detected from " + address.getHostAddress() + "...");
+		printToServerInterface("Login attempt detected from " + address.getHostAddress() + "...", ServerMain.pauseServerPrints);
 		for(int i = 0; i < users.size(); i++){
 			if(users.get(i).getUserName().equals(userName.toLowerCase())){ // Checks if user exists in server
 				return users.get(i).logIn(userName, password, address);
 			}
 		}
-		System.out.println("Login attempt detected from " + address.getHostAddress() +" unsuccessful (User does not exist)\n\n"); // Prints this server side (mainly for debugging)
+		printToServerInterface("Login attempt detected from " + address.getHostAddress() +" unsuccessful (User does not exist)\n\n", ServerMain.pauseServerPrints); // Prints this server side (mainly for debugging)
 		return false;
 	}
 
+	/**
+	 *
+	 */
+
 	private void initializeRepo(){
 		try {
-			System.out.println("Initializing repository...");
+			printToServerInterface("Initializing repository...", ServerMain.pauseServerPrints);
 			File file = new File(fileRepoDirectory);
 			if(!file.exists() || !file.isDirectory()){
-				System.out.println("Repository directory does not exist. Would you like to create it? [Break your computer at your own risk lol] (Y/N)");
+				printToServerInterface("Repository directory does not exist. Would you like to create it? [Break your computer at your own risk lol] (Y/N)", ServerMain.pauseServerPrints);
 				String a = new Scanner(System.in).nextLine();
 				if(a.toUpperCase().equals("Y")){
 					boolean makeDirs = file.mkdirs();
 					if(!makeDirs){
-						System.out.println("An error occurred while creating directories");
+						printToServerInterface("An error occurred while creating directories", ServerMain.pauseServerPrints);
 						System.exit(1);
 					}
 				}
 				else{
-					System.out.println("Server initialization failed. The program will now exit");
+					printToServerInterface("Server initialization failed. The program will now exit", ServerMain.pauseServerPrints);
 					System.exit(1);
 				}
 			}
@@ -217,26 +247,33 @@ public class Server {
 				if (!userFolder.exists() || !userFolder.isDirectory()) {
 					boolean mkdir = userFolder.mkdirs();
 					if (!mkdir) {
-						System.out.println("An error occurred while creating directory belonging to " + user.getUserName());
+						printToServerInterface("An error occurred while creating directory belonging to " + user.getUserName(), ServerMain.pauseServerPrints);
 					}
 				}
 				File userFolder2 = new File(fileRepoDirectory+"/"+user.getUserName()+"/private");
 				if(!userFolder2.exists() || !userFolder2.isDirectory()){
 					boolean makePrivFolder = userFolder2.mkdirs();
 					if(!makePrivFolder) {
-						System.out.println("ok, this shit is broken. Wtf?");
+						printToServerInterface("ok, this shit is broken. Wtf?", ServerMain.pauseServerPrints);
 					}
 				}
 				makeUserFiles(userFolder, user, false, 0, false);
 			}
 
-			System.out.println("Repository initialized successfully");
+			printToServerInterface("Repository initialized successfully", ServerMain.pauseServerPrints);
 		}
 		catch(Exception e){
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 *
+	 * @param userName
+	 * @param password
+	 * @param access
+	 * @return
+	 */
 	protected boolean createUser(String userName, String password, User.Access access){
 
 		// We have this method return something so that the InputThread has to wait for the result of this operation
@@ -245,7 +282,7 @@ public class Server {
 		if(!userFolder.exists() || !userFolder.isDirectory()){
 			boolean makedirs = userFolder.mkdirs();
 			if(!makedirs){
-				System.out.println("Eh");
+				printToServerInterface("Eh", ServerMain.pauseServerPrints);
 			}
 		}
 
@@ -253,7 +290,7 @@ public class Server {
 		if(!userFolderPriv.exists() || !userFolderPriv.isDirectory()){
 			boolean makePrivDirs = userFolderPriv.mkdirs();
 			if(!makePrivDirs){
-				System.out.println("Eh, how does this even return false? lol");
+				printToServerInterface("Eh, how does this even return false? lol", ServerMain.pauseServerPrints);
 				return false;
 			}
 		}
@@ -268,7 +305,7 @@ public class Server {
 			User user = new User(userName, password, access);
 			boolean add = users.add(user);
 			if(!add){
-				System.out.println("Yeet, this shit is broken lol");
+				printToServerInterface("Yeet, this shit is broken lol", ServerMain.pauseServerPrints);
 				return false;
 			}
 		}
@@ -278,6 +315,15 @@ public class Server {
 		}
 		return true;
 	}
+
+	/**
+	 *
+	 * @param f
+	 * @param user
+	 * @param inDir
+	 * @param lvl
+	 * @param Private
+	 */
 
 	private void makeUserFiles(File f, User user, boolean inDir, int lvl, boolean Private){
 		lvl++;
@@ -300,12 +346,12 @@ public class Server {
 					else{
 						String actualFilePath = f.getPath() + "\\" +f.list()[i];
 						File userFile = new File(actualFilePath);
-						FileDetails.FileAccess access;
+						User.Access access;
 						if(Private){
-							access = FileDetails.FileAccess.ADMIN;
+							access = User.Access.ADMIN;
 						}
 						else{
-							access = FileDetails.FileAccess.PUBLIC;
+							access = User.Access.PUBLIC;
 						}
 						FileDetails fileEntry = new FileDetails(userFile, user, access);
 						fileRepoArr.add(fileEntry);
@@ -318,7 +364,24 @@ public class Server {
 		}
 	}
 
+	/**
+	 *
+	 * @param filename
+	 * @return
+	 */
+	private FileDetails getFileDetails(String filename){
+		for(int i = 0; i < fileRepoArr.size(); i++){
+			if(fileRepoArr.get(i).isFile(filename, fileRepoDirectory)){
+				return fileRepoArr.get(i);
+			}
+		}
+		return new FileDetails(null, null, null);
+	}
 
+	/**
+	 *
+	 * @param userIndex
+	 */
 	private void logOutUser(int userIndex){
 		users.get(userIndex).logOut();
 		numConnections.getAndDecrement();
@@ -327,6 +390,11 @@ public class Server {
 		}
 	}
 
+	/**
+	 *
+	 * @param userName
+	 * @return
+	 */
 	private int getUserIndex(String userName){ // This method is only ran when a client has successfully logged in
 		for(int i = 0; i < users.size(); i++){
 			if(users.get(i).getUserName().equals(userName.toLowerCase())){
@@ -336,10 +404,18 @@ public class Server {
 		return -1;
 	}
 
+	/**
+	 *
+	 * @return
+	 */
 	public int numThreads(){
 		return serverThreads.size();
 	}
 
+	/**
+	 *
+	 * @return
+	 */
 	public int numloggedIn(){
 		int a = 0;
 		for(int i = 0; i < users.size(); i++) {
@@ -350,22 +426,55 @@ public class Server {
 		return a;
 	}
 
-	private void addFileOp(FileOperation fileOp){
-		fileOperations.add(fileOp);
+	/**
+	 *
+	 * @param filename
+	 * @param user
+	 * @param fileOp
+	 * @return
+	 */
+	private synchronized FileOperation addFileOp(String filename, User user, FileOperation.FileOp fileOp){
+		FileDetails a = getFileDetails(filename);
+		FileOperation operation = new FileOperation(user, a, fileOp);
+		boolean canOperate = true;
+		for(int i = 0; i < fileOperations.size(); i++){
+			if(operation.getFile().equals(fileOperations.get(i).getFile())){
+				canOperate = false;
+				break;
+			}
+		}
+		if(canOperate) {
+			fileOperations.add(operation);
+			return operation;
+		}
+		else{
+			return null;
+		}
 	}
 
+	/**
+	 *
+	 * @param fileOperation
+	 */
 	private void removeFileOp(FileOperation fileOperation){
 		fileOperations.remove(fileOperation);
 	}
 
-	private void printToServerInterface(String s){
-		if(!ServerMain.pauseServerPrints){
-			System.out.println(s);
+	/**
+	 * Prints items to screen. This method solely exists to act as an "override" of the System.out.println() method. This has the added feature that
+	 * @param o The object that is going to be printed to the console
+	 */
+	private static void printToServerInterface(Object o, boolean b){
+		if(!b){
+			System.out.println(o.toString());
 		}
 	}
 
 	// <------------------------------------------------------------------------------ Private classes here (used mainly for threading) ////////////////////////////////////////////////////////////////////////////
 
+	/**
+	 * Private ConnectionThread Class that keeps track of individual user connections.
+	 */
 	private static class ConnectionThread implements Runnable{
 		Socket conSock;
 		int userIndex; // (We do, however, need it in case connection is lost [sign user out]) User is stored here mainly to ensure that they are signed out when operation is complete
@@ -376,7 +485,11 @@ public class Server {
 		private PrintWriter serverMessenger;
 		private Scanner clientMessageScanner;
 
-
+		/**
+		 *
+		 * @param conSock Connection Socket between client and server
+		 * @param server Server that the thread is communicating with
+		 */
 		public ConnectionThread(Socket conSock, Server server){
 			this.conSock = conSock;
 			this.server = server;
@@ -395,28 +508,28 @@ public class Server {
 				// Still need to test all of this. For now, we just need to ensure that the user can connect to the server (user can connect to server =D)
 				if (userLoggedIn) {
 					autoOp = Boolean.parseBoolean(clientMessageScanner.nextLine()); // Receives whether or not the user is automating operations
-					server.printToServerInterface("Auto operation flag read here");
+					server.printToServerInterface("Auto operation flag read here", ServerMain.pauseServerPrints);
 					if (autoOp) {
 						interaction1();
 						Thread.sleep(10);
 					}
 					else {
-						System.out.println("Initializing interaction2");
+						printToServerInterface("Initializing interaction2", ServerMain.pauseServerPrints);
 						interaction2(); // See interaction2() method
 					}
 					server.logOutUser(userIndex);
 				}
 			}
 			catch(SocketException e){
-				System.out.println("Socket lost");
+				printToServerInterface("Socket lost", ServerMain.pauseServerPrints);
 				server.logOutUser(userIndex);
 			}
 			catch(IOException e){
-				System.out.println("Yeetus deletus");
+				printToServerInterface("Yeetus deletus", ServerMain.pauseServerPrints);
 				server.logOutUser(userIndex);
 			}
 			catch(Exception e){
-				System.out.println("Exception breaking program");
+				printToServerInterface("Exception breaking program", ServerMain.pauseServerPrints);
 				server.logOutUser(userIndex);
 			}
 		}
@@ -457,7 +570,7 @@ public class Server {
 
 						break;
 					default:
-						System.out.println("Invalid operation detected from " + conSock.getInetAddress().getHostAddress());
+						printToServerInterface("Invalid operation detected from " + conSock.getInetAddress().getHostAddress(), ServerMain.pauseServerPrints);
 						serverMessenger.println("Invalid operation entered.");
 						break;
 				}
@@ -468,18 +581,22 @@ public class Server {
 
 		}
 
+		/**
+		 * Responsible for interacting with the client to procure user data
+		 * @return The details pertaining to the success of the user's login attempt ("true" if successful, "false" if unsuccessful)
+		 */
 		private boolean signUserIn(){
 			try {
 				boolean loggedIn = false;
+				this.serverMessenger = new PrintWriter(this.conSock.getOutputStream(), true); // Object that sends messages to client
 				// Figure out a way to prevent the chance of 2 people signing in to the same account at the same time (which would mean there is a rare chance that 2 clients can connect to the same "user account")
-				while (true) {
-					this.serverMessenger = new PrintWriter(this.conSock.getOutputStream(), true); // Object that sends messages to client
 
+				while (true) {
 					serverMessenger.println("Enter username (or send \"quit\" to end) [Note that user names are not case-sensitive]:");
 					this.clientMessageScanner = new Scanner(this.conSock.getInputStream()); // Object that receives messages from client from other side of the socket
 					String userName = clientMessageScanner.nextLine(); // Waits for client to send message
 
-					System.out.println(userName);
+					printToServerInterface(userName, ServerMain.pauseServerPrints);
 					if (userName.equals("quit")) {
 						serverMessenger.println("Thank you. Have a nice day! =D");
 						break;
@@ -495,7 +612,7 @@ public class Server {
 					serverMessenger.println(correct);
 					if (correct) { // Checks if user details are entered correctly
 						serverMessenger.println("Login successful! Welcome back " + userName);
-						userIndex = server.getUserIndex(userName);
+						this.userIndex = server.getUserIndex(userName);
 						String permissions = server.getUser(userIndex).getAccess().toString();
 						serverMessenger.println(permissions);
 						loggedIn = true;
@@ -507,14 +624,17 @@ public class Server {
 				return loggedIn;
 			}
 			catch(SocketException e){
-				System.out.println("Socket timed out");
+				printToServerInterface("Socket timed out", ServerMain.pauseServerPrints);
 			}
 			catch(IOException e){
-				System.out.println("random IOException that occurs");
+				printToServerInterface("random IOException that occurs", ServerMain.pauseServerPrints);
 			}
 			return false;
 		}
-		 /*The interactions that occur when the user doesn't send any automation arguments to the server*/
+		 /**
+		  * The interactions that occur when the user doesn't send any automation arguments to the server
+		  *
+		  * */
 		private void interaction2(){ // Mainly responsible for interactions where user doesn't specify the operations they want to do through command line args
 			try{
 				conSock.getOutputStream(); // Line of code is here just so that we can catch SocketException
@@ -524,7 +644,7 @@ public class Server {
 						Thread.sleep(100);
 						if(server.status == Status.OFFLINE){
 							serverMessenger.println("True");
-							System.out.println("End of all days");
+							printToServerInterface("End of all days", ServerMain.pauseServerPrints);
 							server.logOutUser(userIndex);
 							conSock.close();
 							userQuit = true;
@@ -535,27 +655,28 @@ public class Server {
 						}
 						String option = clientMessageScanner.nextLine().toUpperCase();
 						if (option.equals("UPLOAD")) {
-							System.out.println("UPLOAD called");
+							printToServerInterface("UPLOAD called", ServerMain.pauseServerPrints);
 							//serverMessanger.println("ready"); // Ensures that server is ready for operation to complete
 							receiveFromClient(); // Fix communication
 						}
 						else if (option.equals("DOWNLOAD")) {
-							System.out.println("DOWNLOAD called");
+							printToServerInterface("DOWNLOAD called", ServerMain.pauseServerPrints);
 							//serverMessanger.println("ready");
 							sendToClient(); // Fix communication
 						}
 						else if (option.equals("VIEW")) {
-							System.out.println("VIEW called");
+							printToServerInterface("VIEW called", ServerMain.pauseServerPrints);
 							viewFiles(); // Fix communication
 						}
 						else if (option.equals("PERM")) {
-							serverMessenger.println("PERM called");
+							printToServerInterface("PERM called", ServerMain.pauseServerPrints);
+							printToServerInterface("Yes", ServerMain.pauseServerPrints);
 							changePerms(); // Fix communication
 						}
 						else if (option.equals("QUIT")) {
-							System.out.println("User " + server.users.get(userIndex).getUserName() + " sent quit command");
+							printToServerInterface("User " + server.users.get(userIndex).getUserName() + " sent quit command", ServerMain.pauseServerPrints);
 							server.logOutUser(userIndex);
-							System.out.println("User " + server.getUser(userIndex).getUserName() + " from connection " + conSock.getInetAddress().getHostAddress() + " has signed out successfully");
+							printToServerInterface("User " + server.getUser(userIndex).getUserName() + " from connection " + conSock.getInetAddress().getHostAddress() + " has signed out successfully", ServerMain.pauseServerPrints);
 							conSock.close();
 							userQuit = true;
 							break; // only breaking out of 1 loop
@@ -564,7 +685,7 @@ public class Server {
 				}
 			}
 			catch(SocketException e){
-				System.out.println("Error. Connection with user timed out");
+				printToServerInterface("Error. Connection with user timed out", ServerMain.pauseServerPrints);
 				server.logOutUser(userIndex);
 			}
 			catch (Exception e){
@@ -573,19 +694,25 @@ public class Server {
 
 		}
 
-		/* Checks if the file that is being queried is being used. If the file isn't being used, the server downloads the file from the client */
+		/**
+		 *  Checks if the file that is being queried is being used. If the file isn't being used, the server downloads the file from the client.
+		 *  */
 		private void receiveFromClient(){
-
+			FileOperation op = null;
 			// NB!!!! ADD DIFFERENT USER ACCESS PROTOCOLS!
 
 			// Access isn't really necessary. Just add a file operation whatermacallit
 
 			// Add upload controls here
 
-			if(clientMessageScanner.nextLine().equals("DNEXIST")){
-				System.out.println("File cannot be received from client. [They fucked up]");
+
+			String fileExistString = clientMessageScanner.nextLine();
+			if(fileExistString.equals("DNEXIST")){
+				printToServerInterface("File cannot be received from client. [They fucked up]", ServerMain.pauseServerPrints);
 			}
 			else {
+				// Check is here
+
 				try {
 					DataInputStream din = new DataInputStream(conSock.getInputStream());
 					DataOutputStream dout = new DataOutputStream(conSock.getOutputStream());
@@ -595,84 +722,76 @@ public class Server {
 					str = "bam";
 					dout.writeUTF(str);
 					dout.flush();
-					filename = din.readUTF();
+					filename = din.readUTF(); // Reads in file name
 					FileOperation.FileOp fileOp = server.checkFileOperations(filename);
-					if(fileOp == FileOperation.FileOp.NONE) { // No operation is being performed on the file
-						System.out.println("No operations being ran on file. File can be uploaded");
-						String canreceive = "CANRECEIVE";
-						dout.writeUTF(canreceive);
-						dout.flush();
-						String[] fileArr = filename.split("/");
-						String saveFileDir = server.fileRepoDirectory + server.getUser(userIndex).getUserName() + "/" + fileArr[fileArr.length - 1];
-						str = din.readUTF();
-						long fileSize = Long.parseLong(din.readUTF());
-						File f =  new File(saveFileDir);
-						byte b[] = new byte[1];
-						FileOutputStream fos = new FileOutputStream(f, false);
-						long downSize = 0;
-						int downmarker = 0;
-						do {
-							din.read(b, 0, b.length);
-							fos.write(b, 0, b.length);
-							downSize++;
-							double downProg = (double)downSize / (double)fileSize;
-							if (downProg > 0.1 && downmarker < 1) {
-								System.out.println("10% complete");
-								downmarker = 1;
-							}
-							if (downProg > 0.2 && downmarker < 2) {
-								System.out.println("20% complete");
-								downmarker = 2;
-							}
-							if (downProg > 0.3 && downmarker < 3) {
-								System.out.println("30% complete");
-								downmarker = 3;
-							}
-							if (downProg > 0.4 && downmarker < 4) {
-								System.out.println("40% complete");
-								downmarker = 4;
-							}
-							if (downProg > 0.5 && downmarker < 5) {
-								System.out.println("50% complete");
-								downmarker = 5;
-							}
-							if (downProg > 0.6 && downmarker < 6) {
-								System.out.println("60% complete");
-								downmarker = 6;
-							}
-							if (downProg > 0.7 && downmarker < 7) {
-								System.out.println("70% complete");
-								downmarker = 7;
-							}
-							if (downProg > 0.8 && downmarker < 8) {
-								System.out.println("80% complete");
-								downmarker = 8;
-							}
-							if (downProg > 0.9 && downmarker < 9) {
-								System.out.println("90% complete");
-								downmarker = 9;
-							}
-						}
-						while (downSize < fileSize);
-						fos.flush();
-						fos.close();
+					printToServerInterface(fileOp, ServerMain.pauseServerPrints);
 
-						dout.flush();
-						System.out.println("File written to server successfully");
-						FileDetails fileDetails = new FileDetails(f, server.getUser(userIndex), FileDetails.FileAccess.PUBLIC);
-						server.fileRepoArr.add(fileDetails);
-						serverMessenger.println("Upload complete");
+					if(fileOp == FileOperation.FileOp.NONE) { // No operation is being performed on the file
+						op = server.addFileOp(filename, server.users.get(userIndex), FileOperation.FileOp.UPLOAD);
+						if (op == null) {
+							dout.writeUTF("CANTRECIEVE");
+						} else {
+							String canreceive = "CANRECEIVE";
+							dout.writeUTF(canreceive);
+							dout.flush();
+							String filenameFinal = filename.replace("\\", "/"); // Changes directory dividers to a different character (makes it easier to parse the text properly and work with data from there)
+							String[] fileArr = filenameFinal.split("/");
+							String saveFileDir = server.fileRepoDirectory + server.getUser(userIndex).getUserName() + "\\" + fileArr[fileArr.length - 1];
+							String saveFileCopy = saveFileDir + ".copy"; // Maybe create a copy of the file while it's uploading, and then replace file once complete (This requires a queue [Priority queue would be good])
+							printToServerInterface(server.users.get(userIndex).getUserName() + " attempt to upload file " + fileArr[fileArr.length - 1] + " to servers has been accepted. Writing...", ServerMain.pauseServerPrints);
+							str = din.readUTF(); // Waits for "bam" header line from client before beginning file transfer operation
+							long fileSize = Long.parseLong(din.readUTF());
+							File f = new File(saveFileDir);
+							byte b[] = new byte[1];
+							FileOutputStream fos = new FileOutputStream(f, false);
+							long downSize = 0;
+							do {
+								din.read(b, 0, b.length);
+								fos.write(b, 0, b.length);
+								downSize++;
+							}
+							while (downSize < fileSize);
+							fos.flush();
+							fos.close();
+
+							dout.flush();
+							printToServerInterface(server.users.get(userIndex).getUserName() + " has written file name " + fileArr[fileArr.length - 1] + " to server successfully", ServerMain.pauseServerPrints);
+							boolean newToServer = true;
+							for (int i = 0; i < server.fileRepoArr.size(); i++) {
+								File oldFile = server.fileRepoArr.get(i).getFile();
+								if (f.equals(oldFile)) {
+									newToServer = false;
+								}
+							}
+							if (newToServer) {
+								FileDetails fileDetails = new FileDetails(f, server.getUser(userIndex), User.Access.PUBLIC);
+								server.fileRepoArr.add(fileDetails);
+							}
+							serverMessenger.println("Upload complete");
+							server.removeFileOp(op);
+							printToServerInterface(server.fileOperations.size(), ServerMain.pauseServerPrints);
+						}
+					}
+					else{
+						dout.writeUTF("CANTRECEIVE");
 					}
 				} catch (SocketException e) {
-
+					if(op != null){
+						server.removeFileOp(op);
+					}
 				} catch (Exception e) {
 					e.printStackTrace();
+					if(op != null){
+						server.removeFileOp(op);
+					}
 				}
 
 			}
 		}
 
-		/* Checks if queried file exists on the server, and if it does, it checks if the client can access it and if they can, they can download it*/
+		/**
+		 *  Checks if queried file exists on the server, and if it does, it checks if the client can access it and if they can, they can download it.
+		 *  */
 		private void sendToClient() {
 			String filename = clientMessageScanner.nextLine();
 
@@ -680,79 +799,96 @@ public class Server {
 
 			// Check file status (See if anything is happening with our file)
 
-			FileOperation.FileOp fileOp = server.checkFileOperations(filename);
-
-			boolean fileAvailable;
-
-
-			// Do later
-
-			// End filecheck
-			//while (true) {//infinite while loop to wait for the client to be ready to recieve
-
-
-				try {
-
-					// Does exist check must
-
-					DataInputStream din = new DataInputStream(conSock.getInputStream());
-					DataOutputStream dout = new DataOutputStream(conSock.getOutputStream());
-
-					String finalFilePath = server.fileRepoDirectory + filename;
-					File file = new File(finalFilePath);
-					FileInputStream fileIn = new FileInputStream(file);
-					serverMessenger.println("EXIST");
-					String Data;
-					Data = din.readUTF(); //input recived from the DownloadtoClient method in Client class (recives "bam ")
-					dout.writeUTF(filename); // Sends file name to
-					dout.flush();
-					long sz = (int) file.length();
-					byte b[] = new byte[1];
-					int read;
-					dout.writeUTF("stop");
-					dout.writeUTF(Long.toString(sz));
-					dout.flush();
-					System.out.println("Downloading File: " + filename);
-					while ((read = fileIn.read(b)) > 0) {
-						dout.write(b, 0, read);
-						dout.flush();
+			FileOperation.FileOp fileOp = server.checkFileOperations(filename); // Checks if a user is doing anything with the file. If the file is e.g. being uploaded, then the user can't download the file
+			if(fileOp == FileOperation.FileOp.MOVE || fileOp == FileOperation.FileOp.UPLOAD){
+				serverMessenger.println("CANTDOWN");
+			}
+			else {
+				FileOperation op = server.addFileOp(filename, server.getUser(userIndex), FileOperation.FileOp.DOWNLOAD); // Adds new operation to thingymabob
+				printToServerInterface("Sending download request to servers...", ServerMain.pauseServerPrints);
+				boolean fileAvailable = false;
+				for(int i = 0; i < server.fileRepoArr.size(); i++){
+					// checks permissions on each file in repo
+					boolean a = server.fileRepoArr.get(i).canAccess(server.users.get(userIndex).getAccess());
+					if(a){
+						fileAvailable = true;
 					}
-					fileIn.close();
-					dout.flush();
-
-					dout.flush();
-					System.out.println("File sent to client successfully");
-
 				}
+				printToServerInterface(server.fileRepoArr.get(0).getFileAccess(), ServerMain.pauseServerPrints);
+				printToServerInterface(server.users.get(userIndex).getAccess(), ServerMain.pauseServerPrints);
+				printToServerInterface(server.fileRepoArr.get(0).canAccess(server.users.get(userIndex).getAccess()), ServerMain.pauseServerPrints);
+				printToServerInterface(server.fileRepoArr.size(), ServerMain.pauseServerPrints);
+				printToServerInterface(userIndex, ServerMain.pauseServerPrints);
+				printToServerInterface(op, ServerMain.pauseServerPrints);
+				if(op != null && fileAvailable) { // Checks if FileOperation has been created (if it didn't exist) and if the file is available for download
+					serverMessenger.println("CANDOWN"); // Can Download message is sent
 
-				catch(FileNotFoundException e){
-					System.out.println("File " + filename + " does not exist on server");
-					serverMessenger.println("DNEXIST");
-				}
-				catch(SocketException e){
+					try {
 
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-				}
+						DataInputStream din = new DataInputStream(conSock.getInputStream());
+						DataOutputStream dout = new DataOutputStream(conSock.getOutputStream());
 
+						String finalFilePath = server.fileRepoDirectory + filename;
+						File file = new File(finalFilePath);
+						FileInputStream fileIn = new FileInputStream(file);
+						serverMessenger.println("EXIST");
+						String Data;
+						Data = din.readUTF(); //input recived from the DownloadtoClient method in Client class (receives "bam" header line)
+						if (Data.equals("bam")) {
+							dout.writeUTF(filename); // Sends file name to
+							dout.flush();
+							long sz = (int) file.length();
+							byte b[] = new byte[1];
+							int read;
+							dout.writeUTF("stop");
+							dout.writeUTF(Long.toString(sz));
+							dout.flush();
+							printToServerInterface("Downloading File: " + filename, ServerMain.pauseServerPrints);
+							while ((read = fileIn.read(b)) > 0) {
+								dout.write(b, 0, read);
+								dout.flush();
+							}
+							fileIn.close();
+							dout.flush();
+							dout.flush();
+							printToServerInterface("File sent to client successfully", ServerMain.pauseServerPrints);
+							printToServerInterface(server.fileOperations.size(), ServerMain.pauseServerPrints);
+							server.removeFileOp(op);
+							printToServerInterface(server.fileOperations.size(), ServerMain.pauseServerPrints);
+						}
+					} catch (FileNotFoundException e) {
+						printToServerInterface("Error 404: File " + filename + " does not exist", ServerMain.pauseServerPrints);
+						server.removeFileOp(op);
+						serverMessenger.println("DNEXIST");
+					} catch (SocketException e) {
+						printToServerInterface("An error occurred while sending file to client", ServerMain.pauseServerPrints);
+						server.removeFileOp(op);
+					} catch (Exception e) {
+						e.printStackTrace();
+						server.removeFileOp(op);
+					}
+				}
+				else{
+					serverMessenger.println("CANTDOWN");
+				}
+			}
 			//}
 		}
 
+		/**
+		 * Shows the client all the files that they can view. If there are no available files for them to see, the program informs them of that.
+		 */
 		private void viewFiles(){
 
-			// NB!!! WORK ON THIS
 			ArrayList<String> fileNames = new ArrayList<>();
 			for(int i = 0; i < server.fileRepoArr.size(); i++){
 				FileDetails f = server.fileRepoArr.get(i);
-				if(f.getFileAccess() == FileDetails.FileAccess.PUBLIC){
+				if(f.getFileAccess() == User.Access.PUBLIC){
 					String fileName = f.getFile().getPath();
 					String realFileName = fileName.replace(server.fileRepoDirectory, "");
-					System.out.println(realFileName);
-					System.out.println(server.fileRepoDirectory);
 					fileNames.add(realFileName);
 				}
-				else if(f.getFileAccess() == FileDetails.FileAccess.ADMIN && server.getUser(userIndex).getAccess() == User.Access.ADMIN){
+				else if(f.getFileAccess() == User.Access.ADMIN && server.getUser(userIndex).getAccess() == User.Access.ADMIN){
 					String fileName = f.getFile().getPath();
 					String realFileName = fileName.replace(server.fileRepoDirectory, "");
 					fileNames.add(realFileName);
@@ -764,58 +900,61 @@ public class Server {
 			}
 		}
 
+		/**
+		 * Checks if queried file exists on server, and if it does, changes the visibility of the file based on the previous visibility settings of the file
+		 * (So e.g. if a file was private, it would make it public and vice versa)
+		 * 
+		 */
 		private void changePerms(){
+			
 			// Receives message from client
-
-			// NB!!!! COMPLETE ASAP!
-
-
-
-			/*
-			try {
-				// serverMessanger.println("Enter the name of the file whose permissions will be changed:"); // Add notes later
-				String fileName = clientMessageScanner.nextLine();
-				serverMessanger.println("1");
-				FileOperation.FileOp fo = server.checkFileOperations(fileName);
-				if (fo == FileOperation.FileOp.NONE) {
-					serverMessanger.println("canMove");
-					server.addFileOp(new FileOperation(server.getUser(userIndex), fileName, FileOperation.FileOp.MOVE));
-					if (server.getUser(userIndex).getAccess() == User.Access.ADMIN) {
-						File privateFile = new File(server.resourceRepo + server.getUser(userIndex).getUserName().toLowerCase() + "/private/" + fileName);
-						File publicFile = new File(server.resourceRepo + server.getUser(userIndex).getUserName().toLowerCase() + "/public/" + fileName);
-						serverMessanger.println("privateUserMove");
-						if (publicFile.exists()) {
-							if (privateFile.exists()) {
-								System.out.println("Duplicate files detected. Making file public by default");
-								boolean niceDel = privateFile.delete();
-								System.out.println(niceDel);
-								if (niceDel) {
-									System.out.println("File has been made public successfully");
-								} else {
-									System.out.println("An error occurred while removing duplicate file");
-								}
-							} else {
-								System.out.println("Making file " + fileName + " private...");
-							}
-						} else if (privateFile.exists()) {
-							serverMessanger.println("Making file " + fileName + " public...");
-							Files.copy(publicFile.toPath(), privateFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-						} else {
-							System.out.println("Permission change unsuccessful. This user has never uploaded this file to the server (hence, can't make any permission changes)");
+			String filename = clientMessageScanner.nextLine();
+			FileOperation.FileOp fileOp = server.checkFileOperations(filename);
+			
+			if(fileOp == FileOperation.FileOp.DOWNLOAD || fileOp == FileOperation.FileOp.UPLOAD){
+				printToServerInterface("Cannot move file", ServerMain.pauseServerPrints);
+				serverMessenger.println("CANTMOVE");
+			}
+			else {
+				printToServerInterface("Can move file", ServerMain.pauseServerPrints);
+				serverMessenger.println("CANMOVE");
+				FileOperation op = server.addFileOp(filename, server.users.get(userIndex), FileOperation.FileOp.MOVE);
+				while(true){
+					if(1 == 2){
+						break;
+					}
+				}
+				boolean success;
+				boolean found = false;
+				int filePos = -1;
+				// FileDetails changeFile = new FileDetails(null, null, null); // Create null details (This is to prevent
+				for (int i = 0; i < server.fileRepoArr.size(); i++) {
+					if (server.getUser(userIndex).equals(server.fileRepoArr.get(i).getUserOwner())) {
+						String fileDetailsFileName = server.fileRepoArr.get(i).getFileName(); // File name from FileDetails that we were looking for
+						fileDetailsFileName = fileDetailsFileName.replace(server.fileRepoDirectory, "");
+						if (fileDetailsFileName.equals(filename)) {
+							// changeFile = server.fileRepoArr.get(i);
+							filePos = i;
+							found = true;
 						}
 					}
-					else if(server.getUser(userIndex).getAccess() == User.Access.PUBLIC){
-						serverMessanger.println("publicUserMove");
+				}
+				if (found) {
+					// success = changeFile.changeAccess(server.users.get(userIndex));
+					success = server.fileRepoArr.get(filePos).changeAccess(server.users.get(userIndex));
+
+					if (success) {
+						serverMessenger.println("SUCCESS");
+						server.removeFileOp(op);
+					} else {
+						serverMessenger.println("UNSUCCESS");
+						server.removeFileOp(op);
 					}
 				} else {
-					serverMessanger.println("cantMove");
+					serverMessenger.println("UNSUCCESS");
+					server.removeFileOp(op);
 				}
 			}
-			catch(IOException e){
-				serverMessanger.println("An error occurred while changing file permissions");
-			}*/
-
-
 		}
 
 	}
@@ -830,16 +969,16 @@ public class Server {
 		@Override
 		public void run() {
 			while(true){
-				if(server.status == Status.OFFLINE){
+				if(server.status == Status.OFFLINE){ // Server is offline
 					for (Thread connectionThread : server.serverThreads) {
 						try {
 							connectionThread.join();
 						} catch (InterruptedException e) {
-							System.out.println("Error while closing server:\n" + e.getMessage());
+							printToServerInterface("Error while closing server:\n" + e.getMessage(), ServerMain.pauseServerPrints);
 						}
 					}
 					server.serverThreads.clear();
-					System.out.println("All threads joined");
+					printToServerInterface("All threads joined", ServerMain.pauseServerPrints);
 					break;
 				}
 				else{
@@ -849,7 +988,6 @@ public class Server {
 					catch (Exception e){
 
 					}
-					//System.out.println(server.serverThreads.size());
 					ArrayList<Integer> inactiveThreads = new ArrayList<Integer>();
 					for(int i = 0; i < server.serverThreads.size(); i++){
 						if(!server.serverThreads.get(i).isAlive()){

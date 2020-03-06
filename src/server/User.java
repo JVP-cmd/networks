@@ -1,6 +1,5 @@
 package server;
 
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,5 +64,13 @@ public class User {
 	public void logOut(){
 		connectionAddress = null;
 		loggedIn.set(false);
+	}
+
+	public boolean equals(Object o){
+		if(o.getClass() == User.class){
+			User u = (User)o;
+			return (this.userName.equals(u.getUserName()));
+		}
+		return false;
 	}
 }

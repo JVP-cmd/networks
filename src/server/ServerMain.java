@@ -10,7 +10,7 @@ public class ServerMain {
 	protected volatile static boolean pauseServerPrints;
 	private static String userDBFile;
 	private static String fileRepoDir;
-	protected static final String DBDELIMITER = ";,;delim; delim;!end;";
+	protected static final String DBDELIMITER = ";,;delim; delim;!end;"; // NB!! DO NOT CHANGE!!
 
 	public static void main(String[] args){ // Server main thread [child threads will be made in server object]
 		try {
@@ -54,6 +54,10 @@ public class ServerMain {
 		}
 	}
 	///////////////////////////////////////////////////////////////////////////////////// Private thread classes used in main method ///////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Listener thread that listens for new connections
+	 */
 	private static class ListenerThread implements Runnable{
 		Server server;
 
