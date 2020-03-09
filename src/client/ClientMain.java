@@ -7,7 +7,7 @@ import java.util.*;
 
 public class ClientMain {
 
-	private static final String downloadPath = System.getProperty("user.home") + "\\Downloads\\UCT_PIRATING_SERVER\\";
+	private static final String downloadPath = System.getProperty("user.home") +  System.getProperty("file.separator") + "Downloads" +System.getProperty("file.separator") + "Pigeon Pirates" + System.getProperty("file.separator");
 	private static PrintWriter clientMessenger;
 	private static boolean admin;
 	private static Socket clientSocket;
@@ -97,8 +97,8 @@ public class ClientMain {
 	}
 
 	/**
-	 *	Sends download request to servers and, once the request is accepted,
-	 * @param filename
+	 *	Sends download request to servers and, once the request is accepted, begins donwloading the specified file from the server to the client
+	 * @param filename The name of the file that is being downloaded from the server (this will be the full directory of the file)
 	 */
 	private static void downloadFile(String filename){
 		// Controls here
@@ -169,7 +169,7 @@ public class ClientMain {
 	}
 
 	/**
-	 *
+	 * Sends upload request to servers and, once accepted, begins uploading the specified file from the client to the server
 	 * @param filename The name of the file
 	 */
 	public static void uploadFile(String filename) {
@@ -308,7 +308,7 @@ public class ClientMain {
 
 			File f = new File(downloadPath);
 			if(!f.exists()){
-				System.out.println("Download path for YeetLoader hasn't been made. Generating download path..");
+				System.out.println("Download path for Pigeon Pirates hasn't been made. Generating download path..");
 				boolean downPathMade = f.mkdirs();
 				if(downPathMade){
 					System.out.println("Directory made successfully");
@@ -324,7 +324,8 @@ public class ClientMain {
 
 			clientSocket = new Socket(args[0], Integer.parseInt(args[1]));
 			if(args.length > 3){
-				autoOp = true;
+				// autoOp = true;
+				System.out.println("Operation automation is not possible in this version of the Pigeon Pirates");
 			}
 
 			// Runs operations automatically (These operations aren't ran automatically

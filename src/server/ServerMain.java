@@ -12,6 +12,11 @@ public class ServerMain {
 	private static String fileRepoDir;
 	protected static final String DBDELIMITER = ";,;delim; delim;!end;"; // NB!! DO NOT CHANGE!!
 
+	/**
+	 * Main Method that is ran on the server-side of the application. The server must be ran before any clients are ran.
+	 * This is to ensure that the clients can connect to the matching servers
+	 * @param args args[0]: File Repository Directory; args[1]: User Database Directory; args[2] : Server port number; args[3] : Maximum number of connections that can be made to the server
+	 */
 	public static void main(String[] args){ // Server main thread [child threads will be made in server object]
 		try {
 
@@ -20,12 +25,20 @@ public class ServerMain {
 			// args[1] : User Database Directory
 			// args[2] : Server port number
 			// args[3] : Maximum number of connections that can be made to the server
+
 			pauseServerPrints = false;
 			endServer = false;
 
 			fileRepoDir = args[0];
 
-			fileRepoDir = fileRepoDir.replace("/", "\\");
+			String windowsSeparator = "\\";
+
+			if(System.getProperty("file.separator").equals("\\")){
+				fileRepoDir = fileRepoDir.replace("/", "\\");
+			}
+			else if(System.getProperty("file.separator").equals("/")) {
+				fileRepoDir = fileRepoDir.replace(windowsSeparator, "/");
+			}
 
 			userDBFile = args[1];
 
@@ -56,10 +69,11 @@ public class ServerMain {
 	///////////////////////////////////////////////////////////////////////////////////// Private thread classes used in main method ///////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Listener thread that listens for new connections
+	 * Listener thread that listens for new connections for the server to handle
 	 */
+
 	private static class ListenerThread implements Runnable{
-		Server server;
+		private Server server;
 
 		public ListenerThread(Server server){
 			this.server = server;
@@ -77,9 +91,13 @@ public class ServerMain {
 		}
 	}
 
+	/**
+	 * Input thread that allows a user on the server side to use any server operations
+	 */
+
 	private static class InputThread implements Runnable{
-		Scanner serverInput = new Scanner(System.in);
-		Server server;
+		private Scanner serverInput = new Scanner(System.in);
+		private Server server;
 		private static final String servIn = "Send any input in this menu to continue tracking server operations.";
 
 		public InputThread(Server server){
@@ -152,11 +170,13 @@ public class ServerMain {
 					System.out.println("Continuing server tracking operation...");
 					pauseServerPrints = false;
 				}
+
 				else if(serverOption.toUpperCase().equals("END")) {
 					System.out.println("Are you sure you want to close the server? Any connections made to the server will only be terminated once they have completed their operations.(Y/N)");
 					String quit = serverInput.nextLine();
 					if (quit.toUpperCase().equals("Y")) {
 						System.out.println("Thank you for using our server :D");
+						pauseServerPrints = true;
 						endServer = true;
 						server.close();
 						break;
